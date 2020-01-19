@@ -1,6 +1,6 @@
 # The Hux Kernel
 
-![languages](https://img.shields.io/github/languages/count/hgz12345ssdlh/hux-kernel)
+![languages](https://img.shields.io/github/languages/count/hgz12345ssdlh/hux-kernel?color=gold)
 ![top-lang](https://img.shields.io/github/languages/top/hgz12345ssdlh/hux-kernel)
 ![code-size](https://img.shields.io/github/languages/code-size/hgz12345ssdlh/hux-kernel)
 
