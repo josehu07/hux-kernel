@@ -1,74 +1,84 @@
 #!Makefile
 
-C_SOURCES = $(shell find . -name "*.c")
-C_OBJECTS = $(patsubst %.c, %.o, $(C_SOURCES))
+# Makefile for centralized contorlling of building the Hux system into a
+# CDROM image and launching QEMU.
 
-S_SOURCES = $(shell find . -name "*.s")
-S_OBJECTS = $(patsubst %.s, %.o, $(S_SOURCES))
 
-CC = gcc
-C_FLAGS = -c -Wall -m32 -ggdb -gstabs+ -nostdinc -fno-pic -fno-builtin -fno-stack-protector -I include
+TARGET_BIN=hux.bin
+TARGET_ISO=hux.iso
 
-LD = ld
-LD_FLAGS = -T scripts/kernel.ld -m elf_i386 -nostdlib
+C_SOURCES=$(shell find . -name "*.c")
+C_OBJECTS=$(patsubst %.c, %.o, $(C_SOURCES))
 
-ASM = nasm
-ASM_FLAGS = -f elf -g -F stabs
+S_SOURCES=$(shell find . -name "*.s")
+S_OBJECTS=$(patsubst %.s, %.o, $(S_SOURCES))
+
+ASM=/usr/local/cross/bin/i686-elf-as
+ASM_FLAGS=
+
+CC=/usr/local/cross/bin/i686-elf-gcc
+C_FLAGS=-c -Wall -Wextra -ffreestanding -O2 -std=gnu99
+
+LD=/usr/local/cross/bin/i686-elf-gcc -T scripts/kernel.ld
+LD_FLAGS=-ffreestanding -O2 -nostdlib
+
+HUX_MSG="[--Hux->]"
 
 
 #
 # Targets for building.
 #
-
-all: $(S_OBJECTS) $(C_OBJECTS) link update
-
-.c.o:
-	@echo Compiling C code $< ...
-	$(CC) $(C_FLAGS) $< -o $@
+all: $(S_OBJECTS) $(C_OBJECTS) link verify update
 
 .s.o:
-	@echo Compiling asm code $< ...
-	$(ASM) $(ASM_FLAGS) $<
+	@echo $(HUX_MSG) "Compiling assembly $<..."
+	$(ASM) $(ASM_FLAGS) $< -o $@
+
+.c.o:
+	@echo $(HUX_MSG) "Compiling C code $<..."
+	$(CC) $(C_FLAGS) $< -o $@
 
 link:
-	@echo Linking ...
-	$(LD) $(LD_FLAGS) $(S_OBJECTS) $(C_OBJECTS) -o hux_kernel
+	@echo $(HUX_MSG) "Linking..."	# Remember to link 'libgcc'.
+	$(LD) $(LD_FLAGS) $(S_OBJECTS) $(C_OBJECTS) -lgcc -o $(TARGET_BIN)
 
+# Verify GRUB multiboot sanity.
+.PHONY: verify
+verify:
+	@if grub-file --is-x86-multiboot $(TARGET_BIN); then	\
+		echo $(HUX_MSG) "VERIFY MULTIBOOT: Confirmed ✓"; 	\
+	else													\
+		echo $(HUX_MSG) "VERIFY MULTIBOOT: FAILED ✗";		\
+	fi
+
+# Clean the produced files.
 .PHONY: clean
 clean:
-	rm -f $(S_OBJECTS) $(C_OBJECTS) hux_kernel
+	rm -f $(S_OBJECTS) $(C_OBJECTS) $(TARGET_BIN) $(TARGET_ISO)
 
 
 #
-# Floppy image related.
+# CDROM image related.
 #
-
 .PHONY: update
 update:
-	sudo mount floppy_hux.img /mnt/floppy_hux
-	sudo cp hux_kernel /mnt/floppy_hux/hux_kernel
-	sleep 1
-	sudo umount /mnt/floppy_hux
-
-.PHONY: mount
-mount:
-	sudo mount floppy_hux.img /mnt/floppy_hux
-
-.PHONY: umount
-umount:
-	sudo umount /mnt/floppy_hux
+	@echo $(HUX_MSG) "Writing to CDROM..."
+	mkdir -p isodir/boot/grub
+	cp $(TARGET_BIN) isodir/boot/$(TARGET_BIN)
+	cp scripts/grub.cfg isodir/boot/grub/grub.cfg
+	grub-mkrescue -o $(TARGET_ISO) isodir
 
 
 #
 # Launching QEMU.
 #
-
-.PHONY: qemu
-qemu:
-	qemu -fda floppy_hux.img -boot a
+.PHONY: launch
+launch:
+	@echo $(HUX_MSG) "Launching QEMU..."
+	qemu-system-i386 -cdrom $(TARGET_ISO)
 
 .PHONY: debug
 debug:
-	qemu -S -s -fda floppy_hux.img -boot a &
+	qemu-system-i386 -S -s -cdrom $(TARGET_ISO) &
 	sleep 1
 	cgdb -x tools/gdbinit

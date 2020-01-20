@@ -1,42 +1,41 @@
-/*
- *  Linker script for the Hux kernel.
+/**
+ * The Hux kernel linker script, following the OSDev wiki on
+ * https://wiki.osdev.org/Bare_Bones.
  */
 
 
-ENTRY(start)    /* Entry @ symbol 'start'. */
+/** Starts execution at the '_start' symbol as defined in `boot.s`. */
+ENTRY(_start)
+
+
+/** Sections layout. */
 SECTIONS
 {
-    . = 0x100000;   /* Code starts at 0x100000. */
-    .text :
+    /**
+     * Kernel's booting code will be loaded starting at 1MiB address by the
+     * bootloader by convention.
+     */
+    . = 1M;
+
+    .text ALIGN(4K):    /** Align to 4KiB boundary. */
     {
+        *(.multiboot)
         *(.text)
-        . = ALIGN(4096);    /* Segments align to 4KB. */
     }
 
-    .data :
+    .rodata ALIGN(4K):
+    {
+        *(.rodata)
+    }
+
+    .data ALIGN(4K):
     {
         *(.data)
-        *(.rodata)
-        . = ALIGN(4096);
     }
 
-    .bss :
+    .bss ALIGN(4K):
     {
         *(.bss)
-        . = ALIGN(4096);
+        *(COMMON)
     }
-
-    .stab :
-    {
-        *(.stab)
-        . = ALIGN(4096);
-    }
-    
-    .stabstr :
-    {
-        *(.stabstr)
-        . = ALIGN(4096);
-    }
-
-    /DISCARD/ : { *(.comment) *(.eh_frame) }
 }

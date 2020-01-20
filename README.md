@@ -4,20 +4,59 @@
 ![top-lang](https://img.shields.io/github/languages/top/hgz12345ssdlh/hux-kernel)
 ![code-size](https://img.shields.io/github/languages/code-size/hgz12345ssdlh/hux-kernel?color=lightgrey)
 
-A handmade toy 32-bit operating system kernel, Guanzhou Jose Hu @ Jan 2020.
+A handmade x86 32-bit toy operating system kernel built from scratch.
 
-References:
-
-- [The OSDev Wiki](https://wiki.osdev.org/) (main)
-- [James Molloy's Tutorial](http://www.jamesmolloy.co.uk/tutorial_html/)
-- [Huan Liu's Blog](http://wiki.0xffffff.org/)
-
-[ENG] [James's tutorial](http://www.jamesmolloy.co.uk/tutorial_html/) (and [Huan's duplication](http://wiki.0xffffff.org/)) is newbee-friendly but is rather old (2008). It adopts quite a lot of obsolete or inappropriate techniques (such as using floppy disk image and not using cross-compiling). Luckily, the OSDev community maintains an up-to-date [OSDev wiki](https://wiki.osdev.org/) that makes up for these shortcomings. It even collects [known bugs](https://wiki.osdev.org/James_Molloy's_Tutorial_Known_Bugs) found in James's tutorial. By combining these tutorials we shall be able to build a "modern" toy kernel.
-
-[CHN] [James 的教程](http://www.jamesmolloy.co.uk/tutorial_html/)（以及 [Huan 的复刻整理](http://wiki.0xffffff.org/)）是目前 Kernel 开发上最循循善诱的，但是年代久远（写于 2008 年），有许多技术选择在现在看来已经过时或不当（例如用软盘镜像，不使用 Cross-compiling 等）。幸运的是 OSDev 社区一直在维护 [OSDev wiki](https://wiki.osdev.org/) 并保持更新，填补了这些缺点，甚至还整理了一个 James 教程中的 [known bugs 列表](https://wiki.osdev.org/James_Molloy's_Tutorial_Known_Bugs)。这些资料相互整合着看，会更有益。
+By Guanzhou Jose Hu @ 2020.
 
 
-# TODO List
+## Long-Term Goals
 
-- [ ] Everything...
-- [ ] My combined wiki
+The Hux kernel aims at:
+
+- A *minimal* workable core design
+- Microkernel, highly *modularized*
+- Use *up-to-date* concepts/techniques/components whenever possible
+
+Theses are general and long-term goals which I will follow (hopefully) throughout the project.
+
+
+## Development Doc
+
+I will document the whole development process plus everything I reckon important during the development of Hux in [the wiki pages](https://github.com/hgz12345ssdlh/hux-kernel/wiki). If there are any typos/mistakes/errors, please raise an issue!
+
+
+## Playing with Hux
+
+With QEMU, download the CDROM image `hux.iso` and do:
+
+```bash
+$ qemy-system-i386 -cdrom hux.iso
+```
+
+Or alternatively, you may prepare an empty USB stick then write the image into it to make it bootable by:
+
+```bash
+# Will erase all data on the device, be careful not to destroy your hard disk!
+$ sudo dd if=hux.iso of=/dev/sd<x> && sync
+```
+
+then, plug it onto any x86 IA32 computer, configure its BIOS to boot from USB, and start playing with Hux ;)
+
+
+## References
+
+See the "References" section [here](https://github.com/hgz12345ssdlh/hux-kernel/wiki/1.-Prerequisite-Readings).
+
+
+## TODO List
+
+- [x] The kernel skeleton
+- [ ] Debugging stacks
+- [ ] VGA text mode driver
+- [ ] Descriptors
+- [ ] Interrupts & Timer
+- [ ] Memory management
+- [ ] Multiprocessing
+- [ ] Virtual file system
+- [ ] Wiki pages & README
+- [ ] Coding style spec
