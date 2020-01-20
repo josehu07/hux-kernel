@@ -1,0 +1,6 @@
+hux.bin
+isodir/
+
+.vagrant/
+
+**/.DS_Store
