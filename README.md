@@ -15,9 +15,9 @@ The Hux kernel aims at:
 
 - A *minimal* workable core design
 - Microkernel, highly *modularized*
-- Use *up-to-date* concepts/techniques/components whenever possible
+- Use *up-to-date* concepts/techniques/components when possible
 
-Theses are general and long-term goals which I will follow (hopefully) throughout the project.
+Theses are general and long-term goals which I will (hopefully) follow throughout the project.
 
 
 ## Development Doc

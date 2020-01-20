@@ -14,6 +14,4 @@ Vagrant.configure("2") do |config|
     ]
   end
   config.vm.provision "shell", privileged: false, inline: $setup
-  config.ssh.forward_agent = true   # X11 forwarding enabled for QEMU.
-  config.ssh.forward_x11 = true
 end
