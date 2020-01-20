@@ -1,4 +1,5 @@
-hux.bin
+*.bin
+*.o
 isodir/
 
 .vagrant/
