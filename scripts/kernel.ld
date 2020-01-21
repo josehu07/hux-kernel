@@ -1,9 +1,3 @@
-/**
- * The Hux kernel linker script, following the OSDev wiki on
- * https://wiki.osdev.org/Bare_Bones.
- */
-
-
 /** Starts execution at the '_start' symbol as defined in `boot.s`. */
 ENTRY(_start)
 
