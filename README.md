@@ -25,7 +25,7 @@ These are general and long-term goals which I will (hopefully) follow throughout
 
 ## Development Doc
 
-I will document the whole development process of Hux plus everything I reckon important in the [**wiki pages**](https://github.com/hgz12345ssdlh/hux-kernel/wiki). If there are any typos/mistakes/errors, please raise an issue!
+I will document the whole development process of Hux plus everything I reckon important in the [**WIKI pages 📝**](https://github.com/hgz12345ssdlh/hux-kernel/wiki). If there are any typos/mistakes/errors, please raise an issue!
 
 
 ## Playing with Hux
@@ -59,8 +59,8 @@ Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kerne
 ## TODO List
 
 - [x] The kernel skeleton
-- [ ] VGA text mode driver
-- [ ] Debugging stacks
+- [x] VGA text mode driver
+- [ ] Debugging stack
 - [ ] Global Descriptors
 - [ ] Interrupts & Timer
 - [ ] Memory management
