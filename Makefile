@@ -72,8 +72,8 @@ update:
 #
 # Launching QEMU.
 #
-.PHONY: launch
-launch:
+.PHONY: qemu
+qemu:
 	@echo $(HUX_MSG) "Launching QEMU..."
 	qemu-system-i386 -cdrom $(TARGET_ISO)
 
