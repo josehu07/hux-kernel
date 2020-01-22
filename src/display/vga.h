@@ -37,7 +37,6 @@ typedef enum vga_color vga_color_t;
 static inline uint16_t
 vga_entry(vga_color_t bg, vga_color_t fg, unsigned char c)
 {
-
     return (uint16_t) c | (uint16_t) fg << 8 | (uint16_t) bg << 12;
 }
 
