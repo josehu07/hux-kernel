@@ -66,6 +66,7 @@ Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kerne
 - [ ] Memory management
 - [ ] Multiprocessing
 - [ ] Virtual file system
+- [ ] Security concerns
 - [ ] Wiki pages & README
 - [ ] Coding style spec
 - [ ] Experiment with Rust (call it Rux maybe)
