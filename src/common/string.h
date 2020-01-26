@@ -1,5 +1,5 @@
 /**
- * Common string utilities used by many parts of the kernel.
+ * Common string utilities.
  */
 
 

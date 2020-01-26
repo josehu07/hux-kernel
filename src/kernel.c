@@ -9,8 +9,11 @@
 #endif
 
 
+#include "common/printf.h"
 #include "display/terminal.h"
-#include "common/string.h"
+
+
+static int static_var;
 
 
 /** The main function that `boot.s` jumps to. */
@@ -19,16 +22,23 @@ kernel_main(void)
 {
     terminal_init();
 
-    char *hello_str_1 = "Hello, world! ";
-    for (int i = 1; i < 16; ++i)
-        terminal_write_color(hello_str_1, strlen(hello_str_1), i);
+    int stack_var;
 
-    char *hello_str_2 = "Bello, del me\b\b\b\b\b\bkernel\tworld!\rH\n";
-    terminal_write("\n", 1);
-    for (int i = 1; i < 16; ++i)
-        terminal_write_color(hello_str_2, strlen(hello_str_2), i);
+    tprintf("[%+#010x], [%X], [%-+ #zu], [%0 5li], [%-7d], [%#ho], [%#b]\n",
+            &static_var, &stack_var, sizeof(void *), (long) 791, -238, (short) 11, 13);
 
-    char *hello_str_3 = "Hello from Hux ;)\n";
-    for (int i = 1; i < 8; ++i)
-        terminal_write(hello_str_3, strlen(hello_str_3));
+    tprintf("[%0+10.4lf], [%.3f], [%-10lf], [% 8F], [%#F]\n",
+            37.9, -29086.008446435, 0.27121759, -3.14159, 2.0000718);
+
+    tprintf("[%3c], [%-5c], [%c] | ", 'H', 'u', 'X');
+    tprintf("[%3s], [%-7s], [%s]\n", "hux-kernel", "Hux", "Kernel");
+
+    tprintf("[%p], [%p], [%%]\n", &static_var, &stack_var);
+
+    tprintf("%-#0t, %123-d, %m ... - These are invalid!\n");
+
+    char buf[100];
+
+    sprintf(buf, "Stack pointer: %p\n", &stack_var);
+    tprintf("Buf contains: %s", buf);
 }

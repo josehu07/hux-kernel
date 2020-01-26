@@ -1,5 +1,5 @@
 /**
- * Terminal display control utilities.
+ * Terminal display control.
  */
 
 

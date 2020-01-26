@@ -1,5 +1,5 @@
 /**
- * Common string utilities used by many parts of the kernel.
+ * Common string utilities..
  */
 
 
@@ -57,7 +57,7 @@ strcmp(const char *str1, const char *str2)
     do {
         c1 = *str1++;
         c2 = *str2++;
-    } while (c1 == c2 && c1 != '\0');
+    } while ((c1 == c2) && (c1 != '\0'));
     return c1 - c2;
 }
 

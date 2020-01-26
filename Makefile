@@ -17,7 +17,7 @@ ASM=/usr/local/cross/bin/i686-elf-as
 ASM_FLAGS=
 
 CC=/usr/local/cross/bin/i686-elf-gcc
-C_FLAGS=-c -Wall -Wextra -ffreestanding -O2 -std=gnu99
+C_FLAGS=-c -Wall -Wextra -ffreestanding -O2 -std=gnu99 -Wno-tautological-compare
 
 LD=/usr/local/cross/bin/i686-elf-gcc -T scripts/kernel.ld
 LD_FLAGS=-ffreestanding -O2 -nostdlib
@@ -31,11 +31,11 @@ HUX_MSG="[--Hux->]"
 all: $(S_OBJECTS) $(C_OBJECTS) link verify update
 
 .s.o:
-	@echo $(HUX_MSG) "Compiling assembly $<..."
+	@echo $(HUX_MSG) "Compiling assembly '$<'..."
 	$(ASM) $(ASM_FLAGS) $< -o $@
 
 .c.o:
-	@echo $(HUX_MSG) "Compiling C code $<..."
+	@echo $(HUX_MSG) "Compiling C code '$<'..."
 	$(CC) $(C_FLAGS) $< -o $@
 
 link:

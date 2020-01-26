@@ -1,5 +1,5 @@
 /**
- * Terminal display control utilities.
+ * Terminal display control.
  */
 
 
@@ -31,7 +31,7 @@ static size_t terminal_col;
 
 /** Enable physical cursor and set thickness to 2. */
 static void
-enable_cursor()
+_enable_cursor()
 {
     outb(0x3D4, 0x0A);
     outb(0x3D5, (inb(0x3D5) & 0xC0) | 14);  /** Start at scanline 14. */
@@ -41,7 +41,7 @@ enable_cursor()
 
 /** Update the actual cursor position on screen. */
 static void
-update_cursor()
+_update_cursor()
 {
     size_t idx = terminal_row * VGA_WIDTH + terminal_col;
     outb(0x3D4, 0x0F);
@@ -55,7 +55,7 @@ update_cursor()
  * the last line.
  */
 static void
-scroll_line()
+_scroll_line()
 {
     for (size_t y = 0; y < VGA_HEIGHT; ++y) {
         for (size_t x = 0; x < VGA_WIDTH; ++x) {
@@ -74,7 +74,7 @@ scroll_line()
  * then update the logical cursor position. Should consider special symbols.
  */
 static void
-putchar_color(char c, vga_color_t fg)
+_putchar_color(char c, vga_color_t fg)
 {
     switch (c) {
 
@@ -111,7 +111,7 @@ putchar_color(char c, vga_color_t fg)
 
     /** When going beyond the bottom line, scroll up one line. */
     if (terminal_row == VGA_HEIGHT) {
-        scroll_line();
+        _scroll_line();
         terminal_row--;
     }
 }
@@ -125,7 +125,7 @@ terminal_init(void)
     terminal_row = 0;
     terminal_col = 0;
     terminal_clear();
-    enable_cursor();
+    _enable_cursor();
 }
 
 /** Write a sequence of data. */
@@ -140,8 +140,8 @@ void
 terminal_write_color(const char *data, size_t size, vga_color_t fg)
 {
     for (size_t i = 0; i < size; ++i)
-        putchar_color(data[i], fg);
-    update_cursor();
+        _putchar_color(data[i], fg);
+    _update_cursor();
 }
 
 /** Clear the terminal window by flushing spaces. */
