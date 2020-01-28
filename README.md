@@ -60,7 +60,7 @@ Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kerne
 
 - [x] The kernel skeleton
 - [x] VGA text mode driver
-- [ ] Debugging stack
+- [x] Debugging stack
 - [ ] Global Descriptors
 - [ ] Interrupts & Timer
 - [ ] Memory management

@@ -13,7 +13,7 @@ SECTIONS
 
     .text ALIGN(4K):    /** Align to 4KiB boundary. */
     {
-        *(.multiboot)
+        KEEP(*(.multiboot))     /** Put multiboot header before code. */
         *(.text)
     }
 

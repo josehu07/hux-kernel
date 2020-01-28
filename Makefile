@@ -18,7 +18,7 @@ ASM=/usr/local/cross/bin/i686-elf-as
 ASM_FLAGS=
 
 CC=/usr/local/cross/bin/i686-elf-gcc
-C_FLAGS=-c -Wall -Wextra -ffreestanding -O2 -std=gnu99 -Wno-tautological-compare -g
+C_FLAGS=-c -Wall -Wextra -ffreestanding -O2 -std=gnu99 -Wno-tautological-compare -g -fno-omit-frame-pointer
 
 LD=/usr/local/cross/bin/i686-elf-gcc -T scripts/kernel.ld
 LD_FLAGS=-ffreestanding -O2 -nostdlib

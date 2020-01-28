@@ -27,14 +27,14 @@
 
 /**
  * The kernel must provide a kernel stack. We make a 16KiB stack space here
- * and it will grow downwards from current stack_top. The stack must be
+ * and it will grow downwards from current 'stack_hi'. The stack must be
  * aligned to 16 Bytes according to the System V ABI standard.
  */
 .section .bss
 .align 16
-stack_bottom:
+stack_lo:
 .skip 16384     /** 16 KiB. */
-stack_top:
+stack_hi:
 
 
 /**
@@ -51,8 +51,8 @@ stack_top:
 .type _start, @function
 _start:
 
-    /** Setup the kernel stack by setting ESP to our stack_top symbol. */
-    mov $stack_top, %esp
+    /** Setup the kernel stack by setting ESP to our 'stack_hi' symbol. */
+    movl $stack_hi, %esp
 
     /**
      * Other processor state modifications and runtime supports (such as
@@ -60,7 +60,20 @@ _start:
      * aligned.
      */
     
-    /** Jump to the 'kernel_main' function. */
+    /** Set EBP to NULL for stack tracing's use. */
+    xor %ebp, %ebp
+
+    /** Pass two arguments to 'kernel_main', last -> first. */
+    pushl %ebx  /** Push pointer to multiboot info. */
+    pushl %eax  /** Push bootloader magic number. */
+    
+    /**
+     * Jump to the 'kernel_main' function. According to i386 calling
+     * convention, 'kernel_main' will save EBP (== NULL) to the stack.
+     * Args are:
+     *   4-bytes bootloader_magic
+     *   4-bytes multiboot_info_addr
+     */
     call kernel_main
 
     /**
