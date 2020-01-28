@@ -9,26 +9,37 @@
 #endif
 
 
+#include "boot/multiboot.h"
+#include "boot/elf.h"
+
+#include "common/printf.h"
+#include "common/debug.h"
+
 #include "display/terminal.h"
-#include "common/string.h"
+#include "display/vga.h"
 
 
 /** The main function that `boot.s` jumps to. */
 void
-kernel_main(void)
+kernel_main(unsigned long magic, unsigned long addr)
 {
+    /** Initialize VGA text-mode terminal support. */
     terminal_init();
 
-    char *hello_str_1 = "Hello, world! ";
-    for (int i = 1; i < 16; ++i)
-        terminal_write_color(hello_str_1, strlen(hello_str_1), i);
+    /** Double check the multiboot magic number. */
+    if (magic != MULTIBOOT_BOOTLOADER_MAGIC) {
+        prompt_error();
+        tprintf("Invalid bootloader magic: %#x\n", magic);
+        return;
+    }
 
-    char *hello_str_2 = "Bello, del me\b\b\b\b\b\bkernel\tworld!\rH\n";
-    terminal_write("\n", 1);
-    for (int i = 1; i < 16; ++i)
-        terminal_write_color(hello_str_2, strlen(hello_str_2), i);
+    /** Get pointer to multiboot info. */
+    multiboot_info_t *mbi = (multiboot_info_t *) addr;
 
-    char *hello_str_3 = "Hello from Hux ;)\n";
-    for (int i = 1; i < 8; ++i)
-        terminal_write(hello_str_3, strlen(hello_str_3));
+    /** Initialize debugging utilities. */
+    debug_init(mbi);
+
+    assert(0);
+
+    tprintf("This line should not be displayed!");
 }

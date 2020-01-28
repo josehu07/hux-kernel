@@ -60,12 +60,13 @@ Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kerne
 
 - [x] The kernel skeleton
 - [x] VGA text mode driver
-- [ ] Debugging stack
+- [x] Debugging stack
 - [ ] Global Descriptors
 - [ ] Interrupts & Timer
 - [ ] Memory management
 - [ ] Multiprocessing
 - [ ] Virtual file system
+- [ ] Security concerns
 - [ ] Wiki pages & README
 - [ ] Coding style spec
 - [ ] Experiment with Rust (call it Rux maybe)

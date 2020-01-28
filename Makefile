@@ -6,6 +6,7 @@
 
 TARGET_BIN=hux.bin
 TARGET_ISO=hux.iso
+TARGET_SYM=hux.sym
 
 C_SOURCES=$(shell find . -name "*.c")
 C_OBJECTS=$(patsubst %.c, %.o, $(C_SOURCES))
@@ -17,7 +18,7 @@ ASM=/usr/local/cross/bin/i686-elf-as
 ASM_FLAGS=
 
 CC=/usr/local/cross/bin/i686-elf-gcc
-C_FLAGS=-c -Wall -Wextra -ffreestanding -O2 -std=gnu99
+C_FLAGS=-c -Wall -Wextra -ffreestanding -O2 -std=gnu99 -Wno-tautological-compare -g -fno-omit-frame-pointer
 
 LD=/usr/local/cross/bin/i686-elf-gcc -T scripts/kernel.ld
 LD_FLAGS=-ffreestanding -O2 -nostdlib
@@ -28,14 +29,14 @@ HUX_MSG="[--Hux->]"
 #
 # Targets for building.
 #
-all: $(S_OBJECTS) $(C_OBJECTS) link verify update
+all: $(S_OBJECTS) $(C_OBJECTS) link verify update symfile
 
 .s.o:
-	@echo $(HUX_MSG) "Compiling assembly $<..."
+	@echo $(HUX_MSG) "Compiling assembly '$<'..."
 	$(ASM) $(ASM_FLAGS) $< -o $@
 
 .c.o:
-	@echo $(HUX_MSG) "Compiling C code $<..."
+	@echo $(HUX_MSG) "Compiling C code '$<'..."
 	$(CC) $(C_FLAGS) $< -o $@
 
 link:
@@ -54,7 +55,17 @@ verify:
 # Clean the produced files.
 .PHONY: clean
 clean:
-	rm -f $(S_OBJECTS) $(C_OBJECTS) $(TARGET_BIN) $(TARGET_ISO)
+	rm -f $(S_OBJECTS) $(C_OBJECTS) $(TARGET_BIN) $(TARGET_ISO) $(TARGET_SYM)
+
+
+#
+# Stripping symbols out of the ELF.
+#
+.PHONY: symfile
+symfile:
+	@echo $(HUX_MSG) "Stripping symbols into '$(TARGET_SYM)'..."
+	objcopy --only-keep-debug $(TARGET_BIN) $(TARGET_SYM)
+	objcopy --strip-debug $(TARGET_BIN)
 
 
 #
@@ -70,15 +81,19 @@ update:
 
 
 #
-# Launching QEMU.
+# Launching QEMU/debugging.
 #
 .PHONY: qemu
 qemu:
 	@echo $(HUX_MSG) "Launching QEMU..."
 	qemu-system-i386 -cdrom $(TARGET_ISO)
 
-.PHONY: debug
-debug:
-	qemu-system-i386 -S -s -cdrom $(TARGET_ISO) &
-	sleep 1
-	cgdb -x tools/gdbinit
+.PHONY: qemu_debug
+qemu_debug:
+	@echo $(HUX_MSG) "Launching QEMU (debug mode)..."
+	qemu-system-i386 -S -s -cdrom $(TARGET_ISO)
+
+.PHONY: cgdb
+cgdb:
+	@echo $(HUX_MSG) "Launching colored GDB..."
+	cgdb -x scripts/gdb_init
