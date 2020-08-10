@@ -3,6 +3,7 @@
 ![languages](https://img.shields.io/github/languages/count/josehu07/hux-kernel?color=green)
 ![top-lang](https://img.shields.io/github/languages/top/josehu07/hux-kernel?color=orange)
 ![code-size](https://img.shields.io/github/languages/code-size/josehu07/hux-kernel?color=lightgrey)
+![license](https://img.shields.io/github/license/josehu07/hux-kernel)
 
 A handmade x86 32-bit toy operating system kernel built from scratch.
 
