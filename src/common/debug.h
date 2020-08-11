@@ -13,21 +13,32 @@ void stack_trace();
 
 
 /** Panicking macro. */
-// #define 
+#define panic(fmt, args...) do {                                               \
+                                cprintf(VGA_COLOR_MAGENTA, "PANIC: " fmt "\n", \
+                                        ##args);                               \
+                                stack_trace();                                 \
+                                asm volatile ( "hlt" );                        \
+                            } while (0)
 
 
 /** Assertion macro. */
-#define ASSERT_FAIL_MSG_BUF_LEN 256
-#define assert(condition)                                                     \
-    do {                                                                      \
-        if (!(condition)) {                                                   \
-            char panic_msg[ASSERT_FAIL_MSG_BUF_LEN];                          \
-            sprintf(panic_msg,                                                \
-                    "assertion failed @ function '%s', file '%s': line %d",   \
-                    __FUNCTION__, __FILE__, __LINE__);                        \
-            panic(panic_msg);                                                 \
-        }                                                                     \
-    } while (0)
+#define assert(condition)   do {                                              \
+                                if (!(condition)) {                           \
+                                    panic("assertion failed @ function '%s'," \
+                                          " file '%s': line %d",              \
+                                          __FUNCTION__, __FILE__, __LINE__);  \
+                                }                                             \
+                            } while (0)
+
+
+/** Error prompting macro. */
+#define error(fmt, args...) do {                                           \
+                                cprintf(VGA_COLOR_RED, "ERROR: " fmt "\n", \
+                                        ##args);                           \
+                                panic("error occurred @ function '%s',"    \
+                                      " file '%s': line %d",               \
+                                      __FUNCTION__, __FILE__, __LINE__);   \
+                            } while (0)
 
 
 #endif
