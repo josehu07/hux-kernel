@@ -93,10 +93,10 @@ qemu_debug:
 	@echo $(HUX_MSG) "Launching QEMU (debug mode)..."
 	qemu-system-i386 -S -s -cdrom $(TARGET_ISO)
 
-.PHONY: cgdb
-cgdb:
-	@echo $(HUX_MSG) "Launching colored GDB..."
-	cgdb -x scripts/gdb_init
+.PHONY: gdb
+gdb:
+	@echo $(HUX_MSG) "Launching GDB..."
+	gdb -x scripts/gdb_init
 
 
 #
