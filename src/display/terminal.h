@@ -12,6 +12,14 @@
 #include "vga.h"
 
 
+/**
+ * Default to black background + light grey foreground.
+ * Foreground color can be customized with '*_color' functions.
+ */
+extern const vga_color_t TERMINAL_DEFAULT_COLOR_BG;
+extern const vga_color_t TERMINAL_DEFAULT_COLOR_FG;
+
+
 void terminal_init(void);
 
 void terminal_write(const char *data, size_t size);

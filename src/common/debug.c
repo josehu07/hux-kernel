@@ -25,7 +25,7 @@ static size_t elf_strtab_size;
 
 /** Look up an address in symbols map and return its function name. */
 static const char *
-lookup_symbol_name(uint32_t addr)
+_lookup_symbol_name(uint32_t addr)
 {
     size_t symtab_len = elf_symtab_size / sizeof(elf_symbol_t);
 
@@ -62,15 +62,16 @@ debug_init(multiboot_info_t *mbi)
     /** Loop through the table and look for ".symtab" & ".strtab". */
     for (size_t i = 0; i < sht_len; ++i) {
         const char *name = sh_names + sht[i].name;
-        if (strcmp(name, ".symtab") == 0) {
+        if (strncmp(name, ".symtab", 7) == 0) {
             elf_symtab = (elf_symbol_t *) sht[i].addr;
             elf_symtab_size = sht[i].size;
-        } else if (strcmp(name, ".strtab") == 0) {
+        } else if (strncmp(name, ".strtab", 7) == 0) {
             elf_strtab = (const char *) sht[i].addr;
             elf_strtab_size = sht[i].size;
         }
     }
 }
+
 
 /** Print stack tracing to terminal. */
 void
@@ -82,19 +83,7 @@ stack_trace()
     asm volatile ( "movl %%ebp, %0" : "=r" (ebp) );
     while (ebp != NULL) {
         uint32_t addr = *(ebp + 1);
-        tprintf(" %2u) [%p] %s\n", id++, addr, lookup_symbol_name(addr));
+        printf(" %2u) [%p] %s\n", id++, addr, _lookup_symbol_name(addr));
         ebp = (uint32_t *) *ebp;
     }
-}
-
-/** Panic with a panicking message and print the calling stack. */
-void
-panic(const char *msg)
-{
-    prompt_panic();
-    tprintf("%s\n", msg);
-
-    stack_trace();
-
-    asm volatile ( "hlt" );     /** Halt at panicking. */
 }

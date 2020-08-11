@@ -10,22 +10,9 @@
 #include "../display/terminal.h"
 
 
-void tprintf(const char *fmt, ...);
-void sprintf(char *buf, const char *fmt, ...);
-
-
-/** Message header prompts. */
-inline void
-prompt_error()
-{
-    terminal_write_color("ERROR ", 6, VGA_COLOR_RED);
-}
-
-inline void
-prompt_panic()
-{
-    terminal_write_color("PANIC ", 6, VGA_COLOR_MAGENTA);
-}
+void printf(const char *fmt, ...);
+void cprintf(vga_color_t fg, const char *fmt, ...);
+void snprintf(char *buf, size_t count, const char *fmt, ...);
 
 
 #endif

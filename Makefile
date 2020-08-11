@@ -1,7 +1,9 @@
 #!Makefile
 
+#
 # Makefile for centralized contorlling of building the Hux system into a
 # CDROM image and launching QEMU.
+#
 
 
 TARGET_BIN=hux.bin
@@ -14,13 +16,13 @@ C_OBJECTS=$(patsubst %.c, %.o, $(C_SOURCES))
 S_SOURCES=$(shell find . -name "*.s")
 S_OBJECTS=$(patsubst %.s, %.o, $(S_SOURCES))
 
-ASM=/usr/local/cross/bin/i686-elf-as
+ASM=i686-elf-as
 ASM_FLAGS=
 
-CC=/usr/local/cross/bin/i686-elf-gcc
+CC=i686-elf-gcc
 C_FLAGS=-c -Wall -Wextra -ffreestanding -O2 -std=gnu99 -Wno-tautological-compare -g -fno-omit-frame-pointer
 
-LD=/usr/local/cross/bin/i686-elf-gcc -T scripts/kernel.ld
+LD=i686-elf-gcc -T scripts/kernel.ld
 LD_FLAGS=-ffreestanding -O2 -nostdlib
 
 HUX_MSG="[--Hux->]"
@@ -43,7 +45,10 @@ link:
 	@echo $(HUX_MSG) "Linking..."	# Remember to link 'libgcc'.
 	$(LD) $(LD_FLAGS) $(S_OBJECTS) $(C_OBJECTS) -lgcc -o $(TARGET_BIN)
 
+
+#
 # Verify GRUB multiboot sanity.
+#
 .PHONY: verify
 verify:
 	@if grub-file --is-x86-multiboot $(TARGET_BIN); then	\
@@ -52,10 +57,17 @@ verify:
 		echo $(HUX_MSG) "VERIFY MULTIBOOT: FAILED ✗";		\
 	fi
 
-# Clean the produced files.
-.PHONY: clean
-clean:
-	rm -f $(S_OBJECTS) $(C_OBJECTS) $(TARGET_BIN) $(TARGET_ISO) $(TARGET_SYM)
+
+#
+# Update CDROM image.
+#
+.PHONY: update
+update:
+	@echo $(HUX_MSG) "Writing to CDROM..."
+	mkdir -p isodir/boot/grub
+	cp $(TARGET_BIN) isodir/boot/$(TARGET_BIN)
+	cp scripts/grub.cfg isodir/boot/grub/grub.cfg
+	grub-mkrescue -o $(TARGET_ISO) isodir
 
 
 #
@@ -66,18 +78,6 @@ symfile:
 	@echo $(HUX_MSG) "Stripping symbols into '$(TARGET_SYM)'..."
 	objcopy --only-keep-debug $(TARGET_BIN) $(TARGET_SYM)
 	objcopy --strip-debug $(TARGET_BIN)
-
-
-#
-# CDROM image related.
-#
-.PHONY: update
-update:
-	@echo $(HUX_MSG) "Writing to CDROM..."
-	mkdir -p isodir/boot/grub
-	cp $(TARGET_BIN) isodir/boot/$(TARGET_BIN)
-	cp scripts/grub.cfg isodir/boot/grub/grub.cfg
-	grub-mkrescue -o $(TARGET_ISO) isodir
 
 
 #
@@ -97,3 +97,11 @@ qemu_debug:
 cgdb:
 	@echo $(HUX_MSG) "Launching colored GDB..."
 	cgdb -x scripts/gdb_init
+
+
+#
+# Clean the produced files.
+#
+.PHONY: clean
+clean:
+	rm -f $(S_OBJECTS) $(C_OBJECTS) $(TARGET_BIN) $(TARGET_ISO) $(TARGET_SYM)

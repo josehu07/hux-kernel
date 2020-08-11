@@ -33,7 +33,10 @@ enum vga_color
 typedef enum vga_color vga_color_t;
 
 
-/** VGA entry composer. */
+/**
+ * VGA entry composer.
+ * A VGA entry = [4bits bg | 4bits fg | 8bits content].
+ */
 static inline uint16_t
 vga_entry(vga_color_t bg, vga_color_t fg, unsigned char c)
 {

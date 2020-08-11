@@ -10,11 +10,14 @@
 void debug_init();
 
 void stack_trace();
-void panic(const char *msg);
+
+
+/** Panicking macro. */
+// #define 
 
 
 /** Assertion macro. */
-#define ASSERT_FAIL_MSG_BUF_LEN 200
+#define ASSERT_FAIL_MSG_BUF_LEN 256
 #define assert(condition)                                                     \
     do {                                                                      \
         if (!(condition)) {                                                   \
@@ -24,7 +27,7 @@ void panic(const char *msg);
                     __FUNCTION__, __FILE__, __LINE__);                        \
             panic(panic_msg);                                                 \
         }                                                                     \
-    } while (0);
+    } while (0)
 
 
 #endif

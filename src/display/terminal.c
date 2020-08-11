@@ -18,12 +18,14 @@ static uint16_t * const VGA_MEMORY = (uint16_t *) 0xB8000;
 static const size_t VGA_WIDTH  = 80;
 static const size_t VGA_HEIGHT = 25;
 
+
 /**
  * Default to black background + light grey foreground.
  * Foreground color can be customized with '*_color' functions.
  */
-static const vga_color_t TERMINAL_DEFAULT_COLOR_BG = VGA_COLOR_BLACK;
-static const vga_color_t TERMINAL_DEFAULT_COLOR_FG = VGA_COLOR_LIGHT_GREY;
+const vga_color_t TERMINAL_DEFAULT_COLOR_BG = VGA_COLOR_BLACK;
+const vga_color_t TERMINAL_DEFAULT_COLOR_FG = VGA_COLOR_LIGHT_GREY;
+
 
 static uint16_t *terminal_buf;
 static size_t terminal_row;     /** Records current logical cursor pos. */
