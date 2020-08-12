@@ -16,18 +16,19 @@ The main goal of Hux is to be **Understandable**: structured in a way that is ea
 
 I also choose *C* language with `i386-x32` architecture, since beginners tend to be more comfortable with this combination. More up-to-date system programming languages like *Rust* are great choices for OS dev (Philipp is making his Rust OS kernel [here](https://os.phil-opp.com/)), but I will start with easier settings for now to maintain better understandability.
 
-Other goals of the Hux kernel include:
+Goals of the Hux kernel include:
 
-1. **Minimal**: a minimal workable core design
-2. **Modular**: though monolithic kernel, I will try to keep the code structure modularized
-3. **Educational**: not targetting at practical use
+1. **Understandable**: as stated above
+2. **Minimal**: a minimal workable core design
+3. **Modular**: though monolithic kernel, I will try to keep the code structure modularized
+4. **Educational**: not targeting at practical use
 
-These are general and long-term goals which I will (hopefully) follow throughout the project. I hope this can lead towards a full toy HuxOS which we can install on real devices anplay with in the future 😁
+These are general and long-term goals which I will (hopefully) follow throughout the project. I hope this can lead towards a full toy HuxOS which we can install on real devices and play with in the future 😁
 
 
 ## Development Doc
 
-I document the whole development process of Hux, skeleton, related theories, practice pitfalls, plus everything I reckon important in the [**WIKI pages 📝**](https://github.com/hgz12345ssdlh/hux-kernel/wiki). If there are any typos/mistakes/errors, please raise an issue!
+I document the whole development process of Hux, its skeleton, related theories, practice pitfalls, plus everything I reckon important in the [**WIKI pages 📝**](https://github.com/hgz12345ssdlh/hux-kernel/wiki). If there are any typos / mistakes / errors, please raise an issue!
 
 
 ## Playing with Hux
