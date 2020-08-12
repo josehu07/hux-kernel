@@ -21,7 +21,7 @@ Goals of the Hux kernel include:
 1. **Understandable**: as stated above
 2. **Minimal**: a minimal workable core design
 3. **Modular**: though monolithic kernel, I will try to keep the code structure modularized
-4. **Educational**: not targeting at practical use
+4. **Experimental**: not mimicking existing UNIX flavor, not targeting at practical use
 
 These are general and long-term goals which I will (hopefully) follow throughout the project. I hope this can lead towards a full toy HuxOS which we can install on real devices and play with in the future 😁
 
