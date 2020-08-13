@@ -43,7 +43,8 @@ gdt_set_entry(int idx, uint32_t base, uint32_t limit, uint8_t access,
 
 
 /** Extern our load routine written in ASM `load.s`. */
-extern void gdt_load(uint32_t gdtr_ptr);
+extern void gdt_load(uint32_t gdtr_ptr, uint32_t data_selector_offset,
+                                        uint32_t code_selector_offset);
 
 
 /**
@@ -89,6 +90,11 @@ gdt_init()
     gdtr.boundary = (sizeof(gdt_entry_t) * 5) - 1;  /** Length - 1. */
     gdtr.base     = (uint32_t) &gdt;
 
-    /** Load the GDT. (Passing pointer to `gdtr` as unsigned.) */
-    gdt_load((uint32_t) &gdtr);
+    /**
+     * Load the GDT.
+     * Passing pointer to `gdtr` as unsigned integer. Each GDT entry takes 8
+     * bytes, therefore kernel data selector is at 0x10 and kernel code
+     * selector is at 0x08.
+     */
+    gdt_load((uint32_t) &gdtr, 0x10, 0x08);
 }

@@ -6,8 +6,8 @@
  * instruction.
  *
  * Assumes flat memory model. The first argument is pointer to `gdtr`, the
- * second argument is the index of data segment selector and the third
- * argument is the index of code segment selector.
+ * second argument is the offset of data segment selector and the third
+ * argument is the offset of code segment selector.
  */
 
 
