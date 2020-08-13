@@ -20,7 +20,8 @@ ASM=i686-elf-as
 ASM_FLAGS=
 
 CC=i686-elf-gcc
-C_FLAGS=-c -Wall -Wextra -ffreestanding -O2 -std=gnu99 -Wno-tautological-compare -g -fno-omit-frame-pointer
+C_FLAGS=-c -Wall -Wextra -ffreestanding -O2 -std=gnu99 -Wno-tautological-compare \
+        -g -fno-omit-frame-pointer -fstack-protector
 
 LD=i686-elf-gcc -T scripts/kernel.ld
 LD_FLAGS=-ffreestanding -O2 -nostdlib

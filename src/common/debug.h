@@ -21,6 +21,7 @@ void stack_trace();
                                         ##args);                               \
                                 stack_trace();                                 \
                                 asm volatile ( "hlt" );                        \
+                                __builtin_unreachable();                       \
                             } while (0)
 
 
