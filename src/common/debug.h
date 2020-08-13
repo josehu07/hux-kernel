@@ -7,7 +7,10 @@
 #define DEBUG_H
 
 
-void debug_init();
+#include "../boot/multiboot.h"
+
+
+void debug_init(multiboot_info_t *mbi);
 
 void stack_trace();
 
