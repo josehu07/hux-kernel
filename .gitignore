@@ -4,6 +4,8 @@
 *.o
 isodir/
 
+**/build
+
 .vagrant/
 Vagrantfile
 
