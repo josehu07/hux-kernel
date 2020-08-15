@@ -17,9 +17,9 @@
  */
 struct gdt_entry
 {
-    uint16_t limit_lo;          /** Limit 15:0. */
-    uint16_t base_lo;           /** Base 15:0. */
-    uint8_t  base_mi;           /** Base 23:16. */
+    uint16_t limit_lo;          /** Limit 0:15. */
+    uint16_t base_lo;           /** Base 0:15. */
+    uint8_t  base_mi;           /** Base 16:23. */
     uint8_t  access;            /** Access Byte. */
     uint8_t  limit_hi_flags;    /** Limit 16:19 | FLags. */
     uint8_t  base_hi;           /** Base 24:31. */

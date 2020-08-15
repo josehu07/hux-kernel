@@ -18,6 +18,10 @@
 #include "display/terminal.h"
 #include "display/vga.h"
 
+#include "gdt/gdt.h"
+
+#include "interrupt/idt.h"
+
 
 /** The main function that `boot.s` jumps to. */
 void
@@ -38,7 +42,11 @@ kernel_main(unsigned long magic, unsigned long addr)
     /** Initialize debugging utilities. */
     debug_init(mbi);
 
-    assert(0);
+    /** Initialize global descriptor table (GDT). */
+    gdt_init();
 
-    printf("This line should not be displayed!");
+    /** Initialize interrupt descriptor table (IDT). */
+    idt_init();
+
+    asm volatile ( "int $0x05" );
 }

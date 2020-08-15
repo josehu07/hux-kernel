@@ -42,7 +42,7 @@ gdt_set_entry(int idx, uint32_t base, uint32_t limit, uint8_t access,
 }
 
 
-/** Extern our load routine written in ASM `load.s`. */
+/** Extern our load routine written in ASM `gdt-load.s`. */
 extern void gdt_load(uint32_t gdtr_ptr, uint32_t data_selector_offset,
                                         uint32_t code_selector_offset);
 
@@ -80,7 +80,7 @@ gdt_init()
      *   - Sz = 1: in 32-bit protected mode
      *   Hence, 0b1100 -> 0xC for all these four segments. 
      */
-    gdt_set_entry(0, 0u, 0u, 0u, 0u);
+    gdt_set_entry(0, 0u, 0u, 0u, 0u);           /** 0-th entry is unused. */
     gdt_set_entry(1, 0u, 0xFFFFF, 0x9A, 0xC0);  /** Kernel code segment. */
     gdt_set_entry(2, 0u, 0xFFFFF, 0x92, 0xC0);  /** Kernel data segment. */
     gdt_set_entry(3, 0u, 0xFFFFF, 0xFA, 0xC0);  /** User mode code segment. */

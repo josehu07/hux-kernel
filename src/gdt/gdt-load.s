@@ -16,28 +16,29 @@
 gdt_load:
     
     /** Get first two arguments. */
-    mov 4(%esp), %edx
-    mov 8(%esp), %eax
+    movl 4(%esp), %edx
+    movl 8(%esp), %eax
 
     /** Load the GDT. */
     lgdt (%edx)
 
     /** Load all data segment selectors. */
-    mov %eax, %ds
-    mov %eax, %es
-    mov %eax, %fs
-    mov %eax, %gs
+    movw %ax, %ds
+    movw %ax, %es
+    movw %ax, %fs
+    movw %ax, %gs
 
     /** Load stack segment as well. */
-    mov %eax, %ss
+    movw %ax, %ss
 
     
     /** Load code segment by doing a far jump. */
     pushl 12(%esp)  /** Push FAR pointer on stack. */
-    push $.setcs    /** Push offset of FAR JMP. */
+    pushl $.setcs   /** Push offset of FAR JMP. */
     ljmp *(%esp)    /** Perform FAR JMP. */
 
 .setcs:
-    add $8, %esp    /** Restore stack. */
+
+    addl $8, %esp   /** Restore stack. */
     
     ret

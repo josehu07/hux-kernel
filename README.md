@@ -54,6 +54,7 @@ then, plug it onto an x86 IA32 computer, configure its BIOS to boot from USB, an
 Main references:
 
 - [The OSDev Wiki](https://wiki.osdev.org/) (IMPORTANT ✭)
+- [JamesM's Kernel Tutorial](http://www.jamesmolloy.co.uk/tutorial_html/) by James, along with its [known bugs](https://wiki.osdev.org/James_Molloy's_Tutorial_Known_Bugs)
 - [Writing an OS in Rust](https://os.phil-opp.com/) by Philipp
 
 Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kernel/wiki/1.-Prerequisite-Readings) for the full list.
