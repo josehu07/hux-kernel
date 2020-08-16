@@ -17,20 +17,17 @@
 
 
 /**
- * Hardcoded scancode -> key event mapping.
+ * Hardcode scancode -> key event mapping.
  *
  * Check out https://wiki.osdev.org/Keyboard#Scan_Code_Set_1
  * for a complete list of mappings.
  *
  * We will only code a partial set of mappings - only those most
- * useful events. Notice that we are using the GNU-extended range syntax
- * of a switch-case statement.
- *
- * No multimedia part support.
+ * useful events.
  */
 #define NO_KEY { .press = false, .ascii = false, .info = { .meta = KEY_NULL } }
 
-static keyboard_key_event_t scancode_event_map[224] = {
+static keyboard_key_event_t scancode_event_map[0xE0] = {
     NO_KEY,                                                            // 0x00
     { .press = true , .ascii = false, .info = { .meta = KEY_ESC   } }, // 0x01
     { .press = true , .ascii = true , .info = { .code = '1'       } }, // 0x02
@@ -257,29 +254,258 @@ static keyboard_key_event_t scancode_event_map[224] = {
     NO_KEY,                                                            // 0xDF
 };
 
+static keyboard_key_event_t extendcode_event_map[0xE0] = {
+    NO_KEY,                                                            // 0x00
+    NO_KEY,                                                            // 0x01
+    NO_KEY,                                                            // 0x02
+    NO_KEY,                                                            // 0x03
+    NO_KEY,                                                            // 0x04
+    NO_KEY,                                                            // 0x05
+    NO_KEY,                                                            // 0x06
+    NO_KEY,                                                            // 0x07
+    NO_KEY,                                                            // 0x08
+    NO_KEY,                                                            // 0x09
+    NO_KEY,                                                            // 0x0A
+    NO_KEY,                                                            // 0x0B
+    NO_KEY,                                                            // 0x0C
+    NO_KEY,                                                            // 0x0D
+    NO_KEY,                                                            // 0x0E
+    NO_KEY,                                                            // 0x0F
+    NO_KEY,                                                            // 0x10
+    NO_KEY,                                                            // 0x11
+    NO_KEY,                                                            // 0x12
+    NO_KEY,                                                            // 0x13
+    NO_KEY,                                                            // 0x14
+    NO_KEY,                                                            // 0x15
+    NO_KEY,                                                            // 0x16
+    NO_KEY,                                                            // 0x17
+    NO_KEY,                                                            // 0x18
+    NO_KEY,                                                            // 0x19
+    NO_KEY,                                                            // 0x1A
+    NO_KEY,                                                            // 0x1B
+    NO_KEY,                                                            // 0x1C
+    { .press = true , .ascii = false, .info = { .meta = KEY_CTRL  } }, // 0x1D
+    NO_KEY,                                                            // 0x1E
+    NO_KEY,                                                            // 0x1F
+    NO_KEY,                                                            // 0x20
+    NO_KEY,                                                            // 0x21
+    NO_KEY,                                                            // 0x22
+    NO_KEY,                                                            // 0x23
+    NO_KEY,                                                            // 0x24
+    NO_KEY,                                                            // 0x25
+    NO_KEY,                                                            // 0x26
+    NO_KEY,                                                            // 0x27
+    NO_KEY,                                                            // 0x28
+    NO_KEY,                                                            // 0x29
+    NO_KEY,                                                            // 0x2A
+    NO_KEY,                                                            // 0x2B
+    NO_KEY,                                                            // 0x2C
+    NO_KEY,                                                            // 0x2D
+    NO_KEY,                                                            // 0x2E
+    NO_KEY,                                                            // 0x2F
+    NO_KEY,                                                            // 0x30
+    NO_KEY,                                                            // 0x31
+    NO_KEY,                                                            // 0x32
+    NO_KEY,                                                            // 0x33
+    NO_KEY,                                                            // 0x34
+    NO_KEY,                                                            // 0x35
+    NO_KEY,                                                            // 0x36
+    NO_KEY,                                                            // 0x37
+    { .press = true , .ascii = false, .info = { .meta = KEY_ALT   } }, // 0x38
+    NO_KEY,                                                            // 0x39
+    NO_KEY,                                                            // 0x3A
+    NO_KEY,                                                            // 0x3B
+    NO_KEY,                                                            // 0x3C
+    NO_KEY,                                                            // 0x3D
+    NO_KEY,                                                            // 0x3E
+    NO_KEY,                                                            // 0x3F
+    NO_KEY,                                                            // 0x40
+    NO_KEY,                                                            // 0x41
+    NO_KEY,                                                            // 0x42
+    NO_KEY,                                                            // 0x43
+    NO_KEY,                                                            // 0x44
+    NO_KEY,                                                            // 0x45
+    NO_KEY,                                                            // 0x46
+    { .press = true , .ascii = false, .info = { .meta = KEY_HOME  } }, // 0x47
+    { .press = true , .ascii = false, .info = { .meta = KEY_UP    } }, // 0x48
+    { .press = true , .ascii = false, .info = { .meta = KEY_PGUP  } }, // 0x49
+    NO_KEY,                                                            // 0x4A
+    { .press = true , .ascii = false, .info = { .meta = KEY_LEFT  } }, // 0x4B
+    NO_KEY,                                                            // 0x4C
+    { .press = true , .ascii = false, .info = { .meta = KEY_RIGHT } }, // 0x4D
+    NO_KEY,                                                            // 0x4E
+    { .press = true , .ascii = false, .info = { .meta = KEY_END   } }, // 0x4F
+    { .press = true , .ascii = false, .info = { .meta = KEY_DOWN  } }, // 0x50
+    { .press = true , .ascii = false, .info = { .meta = KEY_PGDN  } }, // 0x51
+    { .press = true , .ascii = false, .info = { .meta = KEY_INS   } }, // 0x52
+    { .press = true , .ascii = false, .info = { .meta = KEY_DEL   } }, // 0x53
+    NO_KEY,                                                            // 0x54
+    NO_KEY,                                                            // 0x55
+    NO_KEY,                                                            // 0x56
+    NO_KEY,                                                            // 0x57
+    NO_KEY,                                                            // 0x58
+    NO_KEY,                                                            // 0x59
+    NO_KEY,                                                            // 0x5A
+    NO_KEY,                                                            // 0x5B
+    NO_KEY,                                                            // 0x5C
+    NO_KEY,                                                            // 0x5D
+    NO_KEY,                                                            // 0x5E
+    NO_KEY,                                                            // 0x5F
+    NO_KEY,                                                            // 0x60
+    NO_KEY,                                                            // 0x61
+    NO_KEY,                                                            // 0x62
+    NO_KEY,                                                            // 0x63
+    NO_KEY,                                                            // 0x64
+    NO_KEY,                                                            // 0x65
+    NO_KEY,                                                            // 0x66
+    NO_KEY,                                                            // 0x67
+    NO_KEY,                                                            // 0x68
+    NO_KEY,                                                            // 0x69
+    NO_KEY,                                                            // 0x6A
+    NO_KEY,                                                            // 0x6B
+    NO_KEY,                                                            // 0x6C
+    NO_KEY,                                                            // 0x6D
+    NO_KEY,                                                            // 0x6E
+    NO_KEY,                                                            // 0x6F
+    NO_KEY,                                                            // 0x70
+    NO_KEY,                                                            // 0x71
+    NO_KEY,                                                            // 0x72
+    NO_KEY,                                                            // 0x73
+    NO_KEY,                                                            // 0x74
+    NO_KEY,                                                            // 0x75
+    NO_KEY,                                                            // 0x76
+    NO_KEY,                                                            // 0x77
+    NO_KEY,                                                            // 0x78
+    NO_KEY,                                                            // 0x79
+    NO_KEY,                                                            // 0x7A
+    NO_KEY,                                                            // 0x7B
+    NO_KEY,                                                            // 0x7C
+    NO_KEY,                                                            // 0x7D
+    NO_KEY,                                                            // 0x7E
+    NO_KEY,                                                            // 0x7F
+    NO_KEY,                                                            // 0x80
+    NO_KEY,                                                            // 0x81
+    NO_KEY,                                                            // 0x82
+    NO_KEY,                                                            // 0x83
+    NO_KEY,                                                            // 0x84
+    NO_KEY,                                                            // 0x85
+    NO_KEY,                                                            // 0x86
+    NO_KEY,                                                            // 0x87
+    NO_KEY,                                                            // 0x88
+    NO_KEY,                                                            // 0x89
+    NO_KEY,                                                            // 0x8A
+    NO_KEY,                                                            // 0x8B
+    NO_KEY,                                                            // 0x8C
+    NO_KEY,                                                            // 0x8D
+    NO_KEY,                                                            // 0x8E
+    NO_KEY,                                                            // 0x8F
+    NO_KEY,                                                            // 0x90
+    NO_KEY,                                                            // 0x91
+    NO_KEY,                                                            // 0x92
+    NO_KEY,                                                            // 0x93
+    NO_KEY,                                                            // 0x94
+    NO_KEY,                                                            // 0x95
+    NO_KEY,                                                            // 0x96
+    NO_KEY,                                                            // 0x97
+    NO_KEY,                                                            // 0x98
+    NO_KEY,                                                            // 0x99
+    NO_KEY,                                                            // 0x9A
+    NO_KEY,                                                            // 0x9B
+    NO_KEY,                                                            // 0x9C
+    { .press = false, .ascii = false, .info = { .meta = KEY_CTRL  } }, // 0x9D
+    NO_KEY,                                                            // 0xA0
+    NO_KEY,                                                            // 0xA1
+    NO_KEY,                                                            // 0xA2
+    NO_KEY,                                                            // 0xA3
+    NO_KEY,                                                            // 0xA4
+    NO_KEY,                                                            // 0xA5
+    NO_KEY,                                                            // 0xA6
+    NO_KEY,                                                            // 0xA7
+    NO_KEY,                                                            // 0xA8
+    NO_KEY,                                                            // 0xA9
+    NO_KEY,                                                            // 0xAA
+    NO_KEY,                                                            // 0xAB
+    NO_KEY,                                                            // 0xAC
+    NO_KEY,                                                            // 0xAD
+    NO_KEY,                                                            // 0xAE
+    NO_KEY,                                                            // 0xAF
+    NO_KEY,                                                            // 0xB0
+    NO_KEY,                                                            // 0xB1
+    NO_KEY,                                                            // 0xB2
+    NO_KEY,                                                            // 0xB3
+    NO_KEY,                                                            // 0xB4
+    NO_KEY,                                                            // 0xB5
+    NO_KEY,                                                            // 0xB6
+    NO_KEY,                                                            // 0xB7
+    { .press = false, .ascii = false, .info = { .meta = KEY_ALT   } }, // 0xB8
+    NO_KEY,                                                            // 0xB9
+    NO_KEY,                                                            // 0xBA
+    NO_KEY,                                                            // 0xBB
+    NO_KEY,                                                            // 0xBC
+    NO_KEY,                                                            // 0xBD
+    NO_KEY,                                                            // 0xBE
+    NO_KEY,                                                            // 0xBF
+    NO_KEY,                                                            // 0xC0
+    NO_KEY,                                                            // 0xC1
+    NO_KEY,                                                            // 0xC2
+    NO_KEY,                                                            // 0xC3
+    NO_KEY,                                                            // 0xC4
+    NO_KEY,                                                            // 0xC5
+    NO_KEY,                                                            // 0xC6
+    { .press = false, .ascii = false, .info = { .meta = KEY_HOME  } }, // 0xC7
+    { .press = false, .ascii = false, .info = { .meta = KEY_UP    } }, // 0xC8
+    { .press = false, .ascii = false, .info = { .meta = KEY_PGUP  } }, // 0xC9
+    NO_KEY,                                                            // 0xCA
+    { .press = false, .ascii = false, .info = { .meta = KEY_LEFT  } }, // 0xCB
+    NO_KEY,                                                            // 0xCC
+    { .press = false, .ascii = false, .info = { .meta = KEY_RIGHT } }, // 0xCD
+    NO_KEY,                                                            // 0xCE
+    { .press = false, .ascii = false, .info = { .meta = KEY_END   } }, // 0xCF
+    { .press = false, .ascii = false, .info = { .meta = KEY_DOWN  } }, // 0xD0
+    { .press = false, .ascii = false, .info = { .meta = KEY_PGDN  } }, // 0xD1
+    { .press = false, .ascii = false, .info = { .meta = KEY_INS   } }, // 0xD2
+    { .press = false, .ascii = false, .info = { .meta = KEY_DEL   } }, // 0xD3
+    NO_KEY,                                                            // 0xD4
+    NO_KEY,                                                            // 0xD5
+    NO_KEY,                                                            // 0xD6
+    NO_KEY,                                                            // 0xD7
+    NO_KEY,                                                            // 0xD8
+    NO_KEY,                                                            // 0xD9
+    NO_KEY,                                                            // 0xDA
+    NO_KEY,                                                            // 0xDB
+    NO_KEY,                                                            // 0xDC
+    NO_KEY,                                                            // 0xDD
+    NO_KEY,                                                            // 0xDE
+    NO_KEY,                                                            // 0xDF
+};
+
 
 /**
- * Timer interrupt handler registered for IRQ # 0.
- * Currently just prints a tick message.
+ * Timer interrupt handler registered for IRQ # 1.
+ * Echoing keystrokes on keyboard.
  */
 static void
 keyboard_interrupt_handler(interrupt_state_t *state)
 {
     (void) state;   /** Unused. */
     
-    /** Read our the event's scancode. */
-    uint8_t scancode = inb(0x60);
+    keyboard_key_event_t event = NO_KEY;
 
     /**
-     * Translate the scancode into a key event, following the scancode
-     * set 1 mappings.
+     * Read our the event's scancode. Translate the scancode into a key
+     * event, following the scancode set 1 mappings.
      */
-    if (scancode < 224) {
-        keyboard_key_event_t event = scancode_event_map[scancode];
-
-        if (event.press && event.ascii)
-            cprintf(VGA_COLOR_LIGHT_BROWN, "%c", event.info.code);
+    uint8_t scancode = inb(0x60);
+    if (scancode < 0xE0)
+        event = scancode_event_map[scancode];
+    else if (scancode == 0xE0) {    /** Is a key in extended set. */
+        uint8_t extendcode = inb(0x60);
+        if (extendcode < 0xE0)
+            event = extendcode_event_map[extendcode];
     }
+
+    if (event.press && event.ascii)
+        cprintf(VGA_COLOR_LIGHT_BROWN, "%c", event.info.code);
 }
 
 

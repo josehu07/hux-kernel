@@ -8,19 +8,32 @@
 
 
 #include <stdint.h>
+#include <stdbool.h>
 
 
 /** A partial set of special keys on US QWERTY keyboard. */
 enum keyboard_meta_key {
-    KEY_ESC,        // Escape
-    KEY_BACK,       // Backspace
-    KEY_TAB,        // Tab
-    KEY_ENTER,      // Enter
-    KEY_CTRL,       // Both ctrls
-    KEY_SHIFT,      // Both shifts
-    KEY_ALT,        // Both alts
-    KEY_CAPS,        // Capslock
-    KEY_NULL,       // Dummy placeholder for empty key
+    KEY_NULL,   // Dummy placeholder for empty key
+
+    KEY_ESC,    // Escape
+    KEY_BACK,   // Backspace
+    KEY_TAB,    // Tab
+    KEY_ENTER,  // Enter
+    KEY_CTRL,   // Both ctrls
+    KEY_SHIFT,  // Both shifts
+    KEY_ALT,    // Both alts
+    KEY_CAPS,   // Capslock
+
+    KEY_HOME,   // Home
+    KEY_END,    // End
+    KEY_UP,     // Cursor up
+    KEY_DOWN,   // Cursor down
+    KEY_LEFT,   // Cursor left
+    KEY_RIGHT,  // Cursor right
+    KEY_PGUP,   // Page up
+    KEY_PGDN,   // Page down
+    KEY_INS,    // Insert
+    KEY_DEL,    // Delete
 };
 typedef enum keyboard_meta_key keyboard_meta_key_t;
 
