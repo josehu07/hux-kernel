@@ -2,7 +2,9 @@
 *.sym
 *.map
 *.o
+
 isodir/
+*.iso
 
 **/build
 
