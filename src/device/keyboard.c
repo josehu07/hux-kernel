@@ -506,6 +506,9 @@ keyboard_interrupt_handler(interrupt_state_t *state)
 
     if (event.press && event.ascii)
         cprintf(VGA_COLOR_LIGHT_BROWN, "%c", event.info.code);
+
+    if (event.press && !event.ascii && event.info.meta == KEY_SHIFT)
+        cprintf(VGA_COLOR_RED, "[SHIFT]");
 }
 
 
