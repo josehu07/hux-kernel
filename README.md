@@ -5,16 +5,27 @@
 ![code-size](https://img.shields.io/github/languages/code-size/josehu07/hux-kernel?color=lightgrey)
 ![license](https://img.shields.io/github/license/josehu07/hux-kernel)
 
-A handmade x86 32-bit toy operating system kernel built from scratch.
+Hux - An x86 32-bit toy operating system kernel built from scratch.
 
-By Guanzhou Jose Hu @ 2020.
+|   Author    | Kernel Src LoC  | Tutorial LoC |
+|   :---:     |      :---:      |    :---:     |
+| Guanzhou Hu |   C + x86 ASM   |   Markdown   |
+|  Aug. 2020  |       ???       |     ???      |
+
+
+## Tutorial / Development Doc
+
+I document the whole development process of Hux - its skeleton, related theories, practice pitfalls, plus everything I reckon important as a complete set of tutorials. They can be found at:
+
+- The [**WIKI pages 📝**](https://github.com/hgz12345ssdlh/hux-kernel/wiki) of this repo
+- ...
+
+If there are any typos / mistakes / errors, please raise an issue!
 
 
 ## Goals
 
-The main goal of Hux is to be **Understandable**: structured in a way that is easy to understand (not mimicking existing UNIX-like systems). OS development seems scary at first glance for beginners mostly because it involves too many hairy technical details. I admit that, in real-world systems, we must face the complexity to ensure compatibility, performance, robustness, security, etc. Yet, a toy kernel project would help demonstrate the key concepts of an operating system, including layers of abstractions, virtualization, concurrency, and persistency.
-
-I also choose *C* language with `i386-x32` architecture, since beginners tend to be more comfortable with this combination. More up-to-date system programming languages like *Rust* are great choices for OS dev (Philipp is making his Rust OS kernel [here](https://os.phil-opp.com/)), but I will start with easier settings for now to maintain better understandability.
+The main goal of Hux is to be **Understandable**: structured in a way that is easy to understand (not mimicking existing UNIX-like systems). OS development seems scary at first glance for beginners mostly because it involves too many hairy technical details. I admit that, in real-world systems, we must face the complexity to ensure compatibility, performance, robustness, security, etc. Yet, a toy kernel project would help demonstrate the key concepts of an operating system, including its most essential modules, layers of abstractions, virtualization, concurrency, and persistency.
 
 Goals of the Hux kernel include:
 
@@ -23,12 +34,9 @@ Goals of the Hux kernel include:
 3. **Modular**: though monolithic kernel, I will try to keep the code structure modularized
 4. **Experimental**: not mimicking existing UNIX flavor, not targeting at practical use
 
-These are general and long-term goals which I will (hopefully) follow throughout the project. I hope this can lead towards a full toy HuxOS which we can install on real devices and play with in the future 😁
+I choose to write it in *C* language with `i386-IA32` architecture, since beginners tend to be more comfortable with this combination. More up-to-date system programming languages like *Rust* are great choices for modern 64-bit OS dev (Philipp is making his Rust OS kernel [here](https://os.phil-opp.com/)), but I will start with easier settings for now to maintain better understandability. Rust itself is still "niche" (maybe not?) and you have to incorporate some of its "dark magics" to succeed in OS dev. It definitely confuses new learners.
 
-
-## Development Doc
-
-I document the whole development process of Hux, its skeleton, related theories, practice pitfalls, plus everything I reckon important in the [**WIKI pages 📝**](https://github.com/hgz12345ssdlh/hux-kernel/wiki). If there are any typos / mistakes / errors, please raise an issue!
+These are general and long-term goals which I will (hopefully) follow throughout the project. I hope this can lead towards a full HuxOS which we can install on real devices and play with in the future (kept simple, of course 😁)
 
 
 ## Playing with Hux
@@ -39,14 +47,7 @@ With QEMU (recommended), download the CDROM image `hux.iso` and do:
 $ qemu-system-i386 -cdrom hux.iso
 ```
 
-Or alternatively, you may prepare an empty USB stick then write the image into it to make it bootable by:
-
-```bash
-# Will erase all data on the device, be careful!
-$ sudo dd if=hux.iso of=/dev/sd<x> && sync
-```
-
-then, plug it onto an x86 IA32 computer, configure its BIOS to boot from USB, and start playing with Hux 😆
+You will see GRUB popping up. Choose the "`Hux`" option to boot into Hux.
 
 
 ## References
@@ -65,14 +66,11 @@ Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kerne
 - [x] The kernel skeleton
 - [x] VGA text mode driver
 - [x] Debugging stack
-- [ ] Interrupts & Timer
+- [x] Interrupts & Timer
 - [x] Global Descriptors
 - [ ] Memory management
+- [ ] User programs
 - [ ] Multiprocessing
 - [ ] Virtual file system
 - [ ] Unit testing utilities
 - [ ] Wiki pages & README
-- [ ] Coding style spec
-- [ ] Experiment with Rust (call it Rux maybe)
-- [ ] Self-designed smallest compiler
-- [ ] Self-designed ISA and more

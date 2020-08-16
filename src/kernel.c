@@ -22,6 +22,28 @@
 
 #include "interrupt/idt.h"
 
+#include "device/timer.h"
+#include "device/keyboard.h"
+
+
+/**
+ * Enabling interrupts by executing the `sti` instruction.
+ * This should be called after all devices have been initialized, so that
+ * the CPU starts taking in interrupts.
+ */
+inline void
+_enable_interrupts()
+{
+    asm volatile ( "sti" );
+}
+
+/** Disables interrupts by executing the `cli` instruction. */
+inline void
+_disable_interrupts()
+{
+    asm volatile ( "cli" );
+}
+
 
 /** The main function that `boot.s` jumps to. */
 void
@@ -48,5 +70,15 @@ kernel_main(unsigned long magic, unsigned long addr)
     /** Initialize interrupt descriptor table (IDT). */
     idt_init();
 
-    asm volatile ( "int $0x05" );
+    /** Initialize PIT timer at 100 Hz frequency. */
+    timer_init(100);
+
+    /** Initialize PS/2 keyboard support. */
+    keyboard_init();
+
+    /** Executes `sti`, CPU starts taking in interrupts. */
+    _enable_interrupts();
+
+    while (1)   // CPU idles with a `hlt` loop.
+        asm volatile ( "hlt" );
 }

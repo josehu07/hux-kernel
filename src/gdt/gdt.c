@@ -84,7 +84,7 @@ gdt_init()
     gdt_set_entry(1, 0u, 0xFFFFF, 0x9A, 0xC0);  /** Kernel code segment. */
     gdt_set_entry(2, 0u, 0xFFFFF, 0x92, 0xC0);  /** Kernel data segment. */
     gdt_set_entry(3, 0u, 0xFFFFF, 0xFA, 0xC0);  /** User mode code segment. */
-    gdt_set_entry(3, 0u, 0xFFFFF, 0xF2, 0xC0);  /** User mode data segment. */
+    gdt_set_entry(4, 0u, 0xFFFFF, 0xF2, 0xC0);  /** User mode data segment. */
 
     /** Setup the GDTR register value. */
     gdtr.boundary = (sizeof(gdt_entry_t) * 5) - 1;  /** Length - 1. */

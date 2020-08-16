@@ -1,8 +1,5 @@
 /**
- * ISR handler common stub.
- *
- * We make 32 wrapper for all 32 trap gate ISRs. They all call the handler
- * stub function, which in turn calls our `isr_handler` function in `isr.c`.
+ * ISR handler common stubs.
  *
  * Notice that for ISRs where the CPU do not push a error code, we push a
  * dummy error code there, in order to maintain a unified function
@@ -11,14 +8,12 @@
 
 
 /**
- * Make 32 wrappers.
- * 
- * These are what get registered in the IDT. Trap gates will automatically
+ * We make 32 wrappers for all 32 trap gates. Trap gates will automatically
  * disable interrupts and restore interrupts when entering and leaving
  * ISR, so no need of `cli` and `sti` here.
  *
  * Traps # 8, 10, 11, 12, 13, 14, 17, or 21 will have a CPU-pushed error
- * code, and for others we push a dummy one.
+ * code, and for all others we push a dummy one.
  */
 .global isr0
 .type isr0, @function
@@ -236,6 +231,122 @@ isr31:
     pushl $31               /** Interrupt index code. */
     jmp isr_handler_stub
 
+/**
+ * We make 16 wrapper for all 16 mapped IRQs from PIC. They all call the
+ * handler stub function as well.
+ */
+.global irq0
+.type irq0, @function
+irq0:
+    pushl $0                /** Dummy error code. */
+    pushl $32               /** Interrupt index code. */
+    jmp isr_handler_stub    /** Jump to handler stub. */
+
+.global irq1
+.type irq1, @function
+irq1:
+    pushl $0                /** Dummy error code. */
+    pushl $33               /** Interrupt index code. */
+    jmp isr_handler_stub    /** Jump to handler stub. */
+
+.global irq2
+.type irq2, @function
+irq2:
+    pushl $0                /** Dummy error code. */
+    pushl $34               /** Interrupt index code. */
+    jmp isr_handler_stub    /** Jump to handler stub. */
+
+.global irq3
+.type irq3, @function
+irq3:
+    pushl $0                /** Dummy error code. */
+    pushl $35               /** Interrupt index code. */
+    jmp isr_handler_stub    /** Jump to handler stub. */
+
+.global irq4
+.type irq4, @function
+irq4:
+    pushl $0                /** Dummy error code. */
+    pushl $36               /** Interrupt index code. */
+    jmp isr_handler_stub    /** Jump to handler stub. */
+
+.global irq5
+.type irq5, @function
+irq5:
+    pushl $0                /** Dummy error code. */
+    pushl $37               /** Interrupt index code. */
+    jmp isr_handler_stub    /** Jump to handler stub. */
+
+.global irq6
+.type irq6, @function
+irq6:
+    pushl $0                /** Dummy error code. */
+    pushl $38               /** Interrupt index code. */
+    jmp isr_handler_stub    /** Jump to handler stub. */
+
+.global irq7
+.type irq7, @function
+irq7:
+    pushl $0                /** Dummy error code. */
+    pushl $39               /** Interrupt index code. */
+    jmp isr_handler_stub    /** Jump to handler stub. */
+
+.global irq8
+.type irq8, @function
+irq8:
+    pushl $0                /** Dummy error code. */
+    pushl $40               /** Interrupt index code. */
+    jmp isr_handler_stub    /** Jump to handler stub. */
+
+.global irq9
+.type irq9, @function
+irq9:
+    pushl $0                /** Dummy error code. */
+    pushl $41               /** Interrupt index code. */
+    jmp isr_handler_stub    /** Jump to handler stub. */
+
+.global irq10
+.type irq10, @function
+irq10:
+    pushl $0                /** Dummy error code. */
+    pushl $42               /** Interrupt index code. */
+    jmp isr_handler_stub    /** Jump to handler stub. */
+
+.global irq11
+.type irq11, @function
+irq11:
+    pushl $0                /** Dummy error code. */
+    pushl $43               /** Interrupt index code. */
+    jmp isr_handler_stub    /** Jump to handler stub. */
+
+.global irq12
+.type irq12, @function
+irq12:
+    pushl $0                /** Dummy error code. */
+    pushl $44               /** Interrupt index code. */
+    jmp isr_handler_stub    /** Jump to handler stub. */
+
+.global irq13
+.type irq13, @function
+irq13:
+    pushl $0                /** Dummy error code. */
+    pushl $45               /** Interrupt index code. */
+    jmp isr_handler_stub    /** Jump to handler stub. */
+
+.global irq14
+.type irq14, @function
+irq14:
+    pushl $0                /** Dummy error code. */
+    pushl $46               /** Interrupt index code. */
+    jmp isr_handler_stub    /** Jump to handler stub. */
+
+.global irq15
+.type irq15, @function
+irq15:
+    pushl $0                /** Dummy error code. */
+    pushl $47               /** Interrupt index code. */
+    jmp isr_handler_stub    /** Jump to handler stub. */
+
 
 /**
  * Handler stub. Saves processor state, load kernel data segment, pushes
@@ -245,7 +356,7 @@ isr31:
  *
  * Be sure that kenrel code segment is at `0x10`.
  */
-.extern isr_handler  /** extern `isr_handler` from C code. */
+.extern isr_handler  /** Extern `isr_handler` from C code. */
 
 isr_handler_stub:
     /** Saves EDI, ESI, EBP, Current ESP, EBX, EDX, ECX, EAX. */

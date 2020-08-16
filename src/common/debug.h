@@ -20,7 +20,8 @@ void stack_trace();
                                 cprintf(VGA_COLOR_MAGENTA, "PANIC: " fmt "\n", \
                                         ##args);                               \
                                 stack_trace();                                 \
-                                asm volatile ( "hlt" );                        \
+                                while (1)                                      \
+                                  asm volatile ( "hlt" );                      \
                                 __builtin_unreachable();                       \
                             } while (0)
 
