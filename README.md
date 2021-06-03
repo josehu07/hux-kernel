@@ -58,6 +58,11 @@ Main references:
 - [JamesM's Kernel Tutorial](http://www.jamesmolloy.co.uk/tutorial_html/) by James, along with its [known bugs](https://wiki.osdev.org/James_Molloy's_Tutorial_Known_Bugs)
 - [Writing an OS in Rust](https://os.phil-opp.com/) by Philipp
 
+OS conceptual materials:
+
+- [Operating Systems: Three Easy Pieces](http://pages.cs.wisc.edu/~remzi/OSTEP/) (OSTEP) by Arpaci-Dusseaus
+- My [Reading Notes](https://www.josehu.com/assets/file/operating-systems-ostep.pdf) on OSTEP Book & Lectures
+
 Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kernel/wiki/1.-Prerequisite-Readings) for the full list.
 
 
