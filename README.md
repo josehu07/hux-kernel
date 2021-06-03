@@ -63,7 +63,7 @@ OS conceptual materials:
 - [Operating Systems: Three Easy Pieces](http://pages.cs.wisc.edu/~remzi/OSTEP/) (OSTEP) by Arpaci-Dusseaus
 - My [Reading Notes](https://www.josehu.com/assets/file/operating-systems-ostep.pdf) on OSTEP Book & Lectures
 
-Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kernel/wiki/1.-Prerequisite-Readings) for the full list.
+Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kernel/wiki/01.-Prerequisite-Readings) for the full list.
 
 
 ## TODO List
