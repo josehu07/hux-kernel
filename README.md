@@ -10,7 +10,7 @@ Hux - An x86 32-bit toy operating system kernel built from scratch.
 |   Author    | Kernel Src LoC  | Tutorial LoC |
 |   :---:     |      :---:      |    :---:     |
 | Guanzhou Hu |   C + x86 ASM   |   Markdown   |
-|  Aug. 2020  |       ???       |     ???      |
+|  Jun. 2021  |       ???       |     ???      |
 
 
 ## Tutorial / Development Doc
@@ -18,14 +18,14 @@ Hux - An x86 32-bit toy operating system kernel built from scratch.
 I document the whole development process of Hux - its skeleton, related theories, practice pitfalls, plus everything I reckon important as a complete set of tutorials. They can be found at:
 
 - The [**WIKI pages 📝**](https://github.com/hgz12345ssdlh/hux-kernel/wiki) of this repo
-- ...
+- The Hux kernel dev doc PDF (identical, WIP)
 
 If there are any typos / mistakes / errors, please raise an issue!
 
 
 ## Goals
 
-The main goal of Hux is to be **Understandable**: structured in a way that is easy to understand (not mimicking existing UNIX-like systems). OS development seems scary at first glance for beginners mostly because it involves too many hairy technical details. I admit that, in real-world systems, we must face the complexity to ensure compatibility, performance, robustness, security, etc. Yet, a toy kernel project would help demonstrate the key concepts of an operating system, including its most essential modules, layers of abstractions, virtualization, concurrency, and persistency.
+The main goal of Hux is to be **Understandable**: structured in a way that is easy to understand (not mimicking existing UNIX-like systems). OS development seems scary at first glance for beginners mostly because it involves too many hairy technical details. I admit that, in real-world systems, we must face the complexity to ensure compatibility, performance, robustness, security, etc. Yet, a toy kernel project would help demonstrate the key concepts of an operating system, including its most essential modules, layers of abstractions, virtualization, concurrency, and persistence.
 
 Goals of the Hux kernel include:
 
@@ -68,9 +68,9 @@ Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kerne
 - [x] Debugging stack
 - [x] Interrupts & Timer
 - [x] Global Descriptors
+- [ ] Process Isolation
 - [ ] Memory management
-- [ ] User programs
-- [ ] Multiprocessing
-- [ ] Virtual file system
+- [ ] Concurrency & Scheduling
+- [ ] Simple flat file system
 - [ ] Unit testing utilities
 - [ ] Wiki pages & README
