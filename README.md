@@ -49,6 +49,8 @@ $ qemu-system-i386 -cdrom hux.iso
 
 You will see GRUB popping up. Choose the "`Hux`" option to boot into Hux.
 
+For development instructions, please check out the wiki pages.
+
 
 ## References
 
