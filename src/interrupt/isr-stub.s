@@ -232,7 +232,7 @@ isr31:
     jmp isr_handler_stub
 
 /**
- * We make 16 wrapper for all 16 mapped IRQs from PIC. They all call the
+ * We make 16 wrappers for all 16 mapped IRQs from PIC. They all call the
  * handler stub function as well.
  */
 .global irq0

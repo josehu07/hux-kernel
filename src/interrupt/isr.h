@@ -23,10 +23,13 @@ struct interrupt_state {
 typedef struct interrupt_state interrupt_state_t;
 
 
-/** Allow other modules to register an ISR. */
+/** Allow other parts to register an ISR. */
 typedef void (*isr_t)(interrupt_state_t *);
 
 void isr_register(uint8_t int_no, isr_t handler);
+
+#define INT_NO_TIMER    32
+#define INT_NO_KEYBOARD 33
 
 
 #endif

@@ -18,9 +18,9 @@
 #include "display/terminal.h"
 #include "display/vga.h"
 
-#include "gdt/gdt.h"
-
 #include "interrupt/idt.h"
+
+#include "memory/gdt.h"
 
 #include "device/timer.h"
 #include "device/keyboard.h"

@@ -520,5 +520,5 @@ void
 keyboard_init()
 {
     /** Register timer interrupt ISR handler. */
-    isr_register(33, &keyboard_interrupt_handler);
+    isr_register(INT_NO_KEYBOARD, &keyboard_interrupt_handler);
 }

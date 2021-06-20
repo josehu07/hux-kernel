@@ -2,7 +2,7 @@
  * Load the IDT.
  * 
  * The `idt_load` function will receive a pointer to the `idtr` value. We
- * will then load the `gdtr` value into IDTR register by the `lidt`
+ * will then load the `idtr` value into IDTR register by the `lidt`
  * instruction.
  */
 

@@ -1,5 +1,8 @@
 /**
  * Common formatted printing utilities.
+ *
+ * Format specifier := %[special][width][.precision][length]<type>. Only
+ * limited features are provided (documented in the wiki page).
  */
 
 
