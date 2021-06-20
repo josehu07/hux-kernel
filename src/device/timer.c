@@ -36,7 +36,7 @@ void
 timer_init(uint16_t freq_hz)
 {
     /** Register timer interrupt ISR handler. */
-    isr_register(32, &timer_interrupt_handler);
+    isr_register(INT_NO_TIMER, &timer_interrupt_handler);
 
     /**
      * Calculate the frequency divisor needed to run with the given

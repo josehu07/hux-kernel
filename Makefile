@@ -1,7 +1,7 @@
 #!Makefile
 
 #
-# Makefile for centralized contorlling of building the Hux system into a
+# Makefile for centralized control of building the Hux system into a
 # CDROM image and launching QEMU.
 #
 

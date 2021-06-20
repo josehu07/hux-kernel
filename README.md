@@ -49,6 +49,8 @@ $ qemu-system-i386 -cdrom hux.iso
 
 You will see GRUB popping up. Choose the "`Hux`" option to boot into Hux.
 
+For development instructions, please check out the wiki pages.
+
 
 ## References
 
@@ -61,7 +63,7 @@ Main references:
 OS conceptual materials:
 
 - [Operating Systems: Three Easy Pieces](http://pages.cs.wisc.edu/~remzi/OSTEP/) (OSTEP) by Arpaci-Dusseaus
-- My [Reading Notes](https://www.josehu.com/assets/file/operating-systems-ostep.pdf) on OSTEP Book & Lectures
+- My [reading notes](https://www.josehu.com/notes) on OSTEP book & lectures
 
 Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kernel/wiki/01.-Prerequisite-Readings) for the full list.
 

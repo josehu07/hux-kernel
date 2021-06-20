@@ -17,10 +17,12 @@
 /** Table of ISRs. Unregistered entries MUST be NULL. */
 isr_t isr_table[256] = {NULL};
 
-/** Exposed to other modules for them to register ISRs. */
+/** Exposed to other parts for them to register ISRs. */
 inline void
 isr_register(uint8_t int_no, isr_t handler)
 {
+    if (isr_table[int_no] != NULL)
+        error("handler for interrupt # %#x already registered", int_no);
     isr_table[int_no] = handler;
 }
 
