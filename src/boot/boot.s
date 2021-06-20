@@ -51,6 +51,8 @@ stack_hi:
 .type _start, @function
 _start:
 
+    cli         /** BIOS may enable interrupts; Disable. */
+
     /** Setup the kernel stack by setting ESP to our 'stack_hi' symbol. */
     movl $stack_hi, %esp
 
