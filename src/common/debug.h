@@ -7,6 +7,11 @@
 #define DEBUG_H
 
 
+#include "printf.h"
+
+#include "../display/vga.h"
+#include "../display/terminal.h"
+
 #include "../boot/multiboot.h"
 
 

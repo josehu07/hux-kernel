@@ -26,8 +26,11 @@
 
 
 /**
- * The kernel must provide a kernel stack. We make a 16KiB stack space here
- * and it will grow downwards from current 'stack_hi'. The stack must be
+ * The kernel must provide a temporary stack for code execution at booting,
+ * when the entire virtual memory system and user mode execution has not been
+ * set up yet. We make a 16KiB stack space here.
+ * 
+ * It will grow downwards from current 'stack_hi'. The stack must be
  * aligned to 16 Bytes according to the System V ABI standard.
  */
 .section .bss
