@@ -24,7 +24,7 @@ static void
 timer_interrupt_handler(interrupt_state_t *state)
 {
     (void) state;   /** Unused. */
-    printf(".");
+    // printf(".");
 }
 
 

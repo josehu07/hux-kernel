@@ -29,7 +29,7 @@ isr_register(uint8_t int_no, isr_t handler)
 
 /** Send back PIC end-of-interrupt (EOI) signal. */
 static void
-pic_send_eoi(uint8_t irq_no)
+_pic_send_eoi(uint8_t irq_no)
 {
     if (irq_no >= 8)
         outb(0xA0, 0x20);   /** If is slave IRQ, should send to both. */
@@ -66,6 +66,6 @@ isr_handler(interrupt_state_t *state)
         if (isr_table[int_no] != NULL)
             isr_table[int_no](state);
 
-        pic_send_eoi(irq_no);   /** Remember to send back EOI signal. */
+        _pic_send_eoi(irq_no);      /** Remember to send back EOI signal. */
     }
 }
