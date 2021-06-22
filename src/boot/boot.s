@@ -54,6 +54,22 @@ stack_hi:
 .type _start, @function
 _start:
 
+    /**
+     * GRUB bootloader disables interrupts for us, so we can safely assume
+     * that interrupts are disabled at this time and don't have to call
+     * `cli` here.
+     */
+
+    /**
+     * GRUB bootloader enables the A20 line for us, so we don't need
+     * to worry about enabling it. It is recommmened to have a checking
+     * function to ensure that it is indeed enabled,
+     * see https://wiki.osdev.org/A20_Line.
+     * We will skip this step since it is not necessary (our linker script
+     * puts everything above 1MiB, so the A20 line must have been enabled
+     * for code here to execute!).
+     */
+
     /** Setup the kernel stack by setting ESP to our 'stack_hi' symbol. */
     movl $stack_hi, %esp
 

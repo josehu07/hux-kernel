@@ -25,14 +25,14 @@ If there are any typos / mistakes / errors, please raise an issue!
 
 ## Goals
 
-The main goal of Hux is to be **Understandable**: structured in a way that is easy to understand (not mimicking existing UNIX-like systems). OS development seems scary at first glance for beginners mostly because it involves too many hairy technical details. I admit that, in real-world systems, we must face the complexity to ensure compatibility, performance, robustness, security, etc. Yet, a toy kernel project would help demonstrate the key concepts of an operating system, including its most essential modules, layers of abstractions, virtualization, concurrency, and persistence.
+The main goal of Hux is to be **Understandable**: structured in a way that is easy to understand (not mimicking existing UNIX-like systems). OS development seems scary at first glance for beginners mostly because it involves too many hairy technical details. I admit that, in real-world systems, we must face the complexity to ensure compatibility, performance, robustness, security, etc. Yet, a toy kernel project would help demonstrate the key concepts of an operating system, including its most essential steps of development, layers of abstractions, and the ideas of virtualization, concurrency, and persistence.
 
 Goals of the Hux kernel include:
 
-1. **Understandable**: as stated above
-2. **Minimal**: a minimal workable core design
-3. **Modular**: though monolithic kernel, I will try to keep the code structure modularized
-4. **Experimental**: not mimicking existing UNIX flavor, not targeting at practical use
+1. **Understandability**: as stated above
+2. **Minimalism**: a minimal workable core design
+3. **Code clarity**: though monolithic kernel, I will try to keep the code structure modularized
+4. **Experimentalism**: not mimicking existing UNIX flavor, not targeting at practical use
 
 I choose to write it in *C* language with `i386-IA32` architecture, since beginners tend to be more comfortable with this combination. More up-to-date system programming languages like *Rust* are great choices for modern 64-bit OS dev (Philipp is making his Rust OS kernel [here](https://os.phil-opp.com/)), but I will start with easier settings for now to maintain better understandability. Rust itself is still "niche" (maybe not?) and you have to incorporate some of its "dark magics" to succeed in OS dev. It definitely confuses new learners.
 
@@ -47,9 +47,9 @@ With QEMU (recommended), download the CDROM image `hux.iso` and do:
 $ qemu-system-i386 -cdrom hux.iso
 ```
 
-You will see GRUB popping up. Choose the "`Hux`" option to boot into Hux.
+You will see the QEMU GUI popping up with GRUB loaded. Choose the "`Hux`" option with <kbd>Enter</kbd> to boot into Hux.
 
-For development instructions, please check out the wiki pages.
+For development setup & instructions, please check out the wiki pages. I have every single detail documented there.
 
 
 ## References
@@ -70,14 +70,18 @@ Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kerne
 
 ## TODO List
 
-- [x] The kernel skeleton
+- [x] The basic kernel skeleton
 - [x] VGA text mode driver
-- [x] Debugging stack
-- [x] Interrupts & Timer
-- [x] Global Descriptors
-- [ ] Process Isolation
-- [ ] Memory management
-- [ ] Concurrency & Scheduling
-- [ ] Simple flat file system
-- [ ] Unit testing utilities
+- [x] Debugging utilities stack
+- [x] Interrupts & timer
+- [x] Keyboard input support
+- [x] Global descriptors table
+- [x] Virtual memory (paging)
+- [ ] Heal memory allocator
+- [ ] Process isolation
+- [ ] Context switch & scheduling
+- [ ] Multi-threading concurrency
+- [ ] Synchronization primitives
+- [ ] Basic IDE disk driver
+- [ ] Very simple file system
 - [ ] Wiki pages & README
