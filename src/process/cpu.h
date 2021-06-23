@@ -11,13 +11,13 @@
 
 
 /** Per-CPU state (we only have a single CPU). */
-struct cpu_state {
-    /** No ID field because only supporting single CPU. */
-    process_context_t *scheduler;   /** CPU scheduler context. */
-    process_t *running_proc;        /** The process running or NULL. */
-    // ... (TODO)
-};
-typedef struct cpu_state cpu_state_t;
+// struct cpu_state {
+//     /** No ID field because only supporting single CPU. */
+//     process_context_t *scheduler;   /** CPU scheduler context. */
+//     process_t *running_proc;        /** The process running or NULL. */
+//     // ... (TODO)
+// };
+// typedef struct cpu_state cpu_state_t;
 
 // Per-CPU state
 // struct cpu {

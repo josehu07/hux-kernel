@@ -23,6 +23,7 @@
 
 #include "memory/gdt.h"
 #include "memory/paging.h"
+#include "memory/slabs.h"
 #include "memory/kheap.h"
 
 #include "device/timer.h"
@@ -100,7 +101,7 @@ kernel_main(unsigned long magic, unsigned long addr)
     uint16_t timer_freq_hz = 100;
     timer_init(timer_freq_hz);
     _init_message_ok();
-    info("timer frequency set to %dHz", timer_freq_hz);
+    info("timer frequency is set to %dHz", timer_freq_hz);
 
     /** Initialize PS/2 keyboard support. */
     _init_message("initializing PS/2 keybaord support");
@@ -115,42 +116,30 @@ kernel_main(unsigned long magic, unsigned long addr)
     info("reserving memory for the kernel: %3dMiB", KMEM_MAX / 1024 / 1024);
 
     /** Initialize the kernel heap allocator. */
-    _init_message("initializing kernel heap memory allocator");
+    _init_message("initializing kernel heap memory allocators");
+    page_slab_init();
     kheap_init();
     _init_message_ok();
-    info("kernel free heap starts at %#X", kheap_curr);
+    info("kernel page SLAB list starts at %p", PAGE_SLAB_MIN);
+    info("kernel flexible heap  starts at %p", kheap_curr);
 
     /** Executes `sti`, CPU starts taking in interrupts. */
     _enable_interrupts();
 
-    printf("\nKallocing arr1 - 128 bytes...\n");
-    char *arr1 = (char *) kalloc(128 * sizeof(char));
-    strncpy(arr1, "hello\n", 127);
+    printf("\nSallocing page1...\n");
+    char *block1 = (char *) salloc_page();
+    printf("block 1 @ %p\n", block1);
 
-    printf("\nKallocing arr2 - 23 bytes...\n");
-    char *arr2 = (char *) kalloc(23 * sizeof(char));
-    strncpy(arr2, "hello\n", 22);
+    printf("\nSallocing page2...\n");
+    char *block2 = (char *) salloc_page();
+    printf("block 2 @ %p\n", block2);
 
-    printf("\nKallocing arr3 - 437 bytes...\n");
-    char *arr3 = (char *) kalloc(437 * sizeof(char));
-    strncpy(arr3, "hello\n", 436);
+    printf("\nSfreeing page1...\n");
+    sfree_page(block1);
 
-    printf("\nKfreeing arr3, should coalesce with the big chunk...\n");
-    kfree(arr3);
-
-    printf("\nKfreeing arr1, should have no coalescing...\n");
-    kfree(arr1);
-
-    printf("\nKallocing arr4 - 54 bytes, should reuse the first chunk...\n");
-    char *arr4 = (char *) kalloc(54 * sizeof(char));
-    strncpy(arr4, "hello\n", 53);
-
-    printf("\nKfreeing arr2, should coalesce with both neighbors...\n");
-    kfree(arr2);
-
-    printf("\nKallocing arr5 - 3971 bytes...\n");
-    char *arr5 = (char *) kalloc(3971 * sizeof(char));
-    strncpy(arr5, "hello\n", 3970);
+    printf("\nSallocing page3, should reuse the highest node...\n");
+    char *block3 = (char *) salloc_page();
+    printf("block 3 @ %p\n", block3);
 
     while (1)   // CPU idles with a `hlt` loop.
         asm volatile ( "hlt" );

@@ -11,17 +11,19 @@
 #include <stdbool.h>
 
 
-/** Number of physical frames available. Assume 128MiB physical memory. */
-#define NUM_FRAMES 32768        /** 128MiB physical memory. */
-
-/** Up to where is kernel memory, == the upper bound of kernel heap. */
-#define KMEM_MAX 0x00800000     /** 8MiB reserved for the kernel. */
-
 /** Assume 4KiB pages, not support any other sizes. */
 #define PAGE_SIZE 4096
 
 #define PTES_PER_PAGE 1024
 #define PDES_PER_PAGE 1024
+
+
+/** Number of physical frames available. Assume 128MiB physical memory. */
+#define PHYS_MAX 0x08000000     /** 128MiB physical memory. */
+#define NUM_FRAMES (PHYS_MAX / PAGE_SIZE)
+
+/** Up to where is kernel memory, == the upper bound of kernel heap. */
+#define KMEM_MAX 0x00800000     /** 8MiB reserved for the kernel. */
 
 
 /** Helper macros on addresses and page alignments. */

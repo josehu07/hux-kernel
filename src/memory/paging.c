@@ -183,7 +183,7 @@ page_fault_handler(interrupt_state_t *state)
 
     /** Just prints an information message for now. */
     info("Caught page fault {\n"
-         "  faulty addr = %#X\n"
+         "  faulty addr = %p\n"
          "  present: %d\n"
          "  write:   %d\n"
          "  user:    %d\n"

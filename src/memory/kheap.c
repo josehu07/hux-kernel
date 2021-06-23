@@ -15,8 +15,8 @@
 #include "../common/debug.h"
 
 
-static uint32_t kheap_bottom;
-static uint32_t kheap_top = KMEM_MAX;
+static uint32_t kheap_btm;
+static uint32_t kheap_top;
 
 
 /** Global state of the free-list. */
@@ -26,15 +26,15 @@ static size_t free_list_length = 1;
 
 
 /** For debug printing the state of the free-list. */
-static void
+__attribute__((unused)) static void
 _print_free_list_state(void)
 {
     fl_header_t *header_curr = bottom_most_header;
 
-    info("Kheap free-list length = %d, last_search = %#X, nodes:",\
+    info("Kheap free-list length = %d, last_search = %p, nodes:",\
          free_list_length, last_search_header);
     do {
-        printf("  node header %#X { size: %d, next: %#X }\n",
+        printf("  node header %p { size: %d, next: %p }\n",
                header_curr, header_curr->size, header_curr->next);
 
         header_curr = (fl_header_t *) header_curr->next;
@@ -117,9 +117,7 @@ kalloc(size_t size)
         header_curr->free = false;
         uint32_t object = HEADER_TO_OBJECT((uint32_t) header_curr);
 
-        memset((char *) object, 0, size);   /** Zero out the region. */
-
-        _print_free_list_state();
+        // _print_free_list_state();
         return object;
 
     } while (header_curr != header_begin);
@@ -128,6 +126,7 @@ kalloc(size_t size)
     error("kalloc failed: no free chunk large enough for size %d\n", size);
     return 0;
 }
+
 
 /**
  * Free a previously allocated object address, and merges it into the
@@ -138,12 +137,19 @@ kfree(void *addr)
 {
     fl_header_t *header = (fl_header_t *) OBJECT_TO_HEADER((uint32_t) addr);
 
-    if (header->magic != KHEAP_MAGIC) {
-        error("kfree failed: object %#X corrupted its header magic", addr);
+    if ((uint32_t) addr < kheap_btm || (uint32_t) addr >= kheap_top) {
+        error("kfree failed: object %p is out of heap range", addr);
         return;
     }
 
+    if (header->magic != KHEAP_MAGIC) {
+        error("kfree failed: object %p corrupted its header magic", addr);
+        return;
+    }
+
+    /** Fill with zero bytes to catch dangling pointers use. */
     header->free = true;
+    memset((char *) addr, 0, header->size);
 
     /**
      * Special case of empty free-list (all bytes exactly allocated before
@@ -231,7 +237,7 @@ kfree(void *addr)
         }
     }
 
-    _print_free_list_state();
+    // _print_free_list_state();
 }
 
 
@@ -244,11 +250,12 @@ kheap_init(void)
      * are free heap memory available to use. Initialize it as one big
      * free chunk.
      */
-    kheap_bottom = kheap_curr;
-    kheap_top = KMEM_MAX;
+    kheap_btm = kheap_curr;
+    kheap_top = KHEAP_MAX;
 
-    fl_header_t *header = (fl_header_t *) kheap_bottom;
-    uint32_t size = (kheap_top - kheap_bottom) - sizeof(fl_header_t);
+    fl_header_t *header = (fl_header_t *) kheap_btm;
+    uint32_t size = (kheap_top - kheap_btm) - sizeof(fl_header_t);
+    memset((char *) (HEADER_TO_OBJECT(kheap_btm)), 0, size);
 
     header->size = size;
     header->free = true;

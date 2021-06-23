@@ -10,6 +10,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "slabs.h"
+
+
+/** The region between `kheap_curr` and slab allocators is free heap. */
+#define KHEAP_MAX PAGE_SLAB_MIN
+
 
 /** Random magic number to protect against memory overruns. */
 #define KHEAP_MAGIC 0xFBCA0739
