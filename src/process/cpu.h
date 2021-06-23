@@ -10,13 +10,14 @@
 #include "process.h"
 
 
-/** Per-CPU state. */
-// struct cpu_state {
-//     /** No ID field because only supporting single CPU. */
-//     process_context_t *scheduler;   /** CPU scheduler context. */
-//     process_t *running_proc;        /** The process running or NULL. */
-// };
-// typedef struct cpu_state cpu_state_t;
+/** Per-CPU state (we only have a single CPU). */
+struct cpu_state {
+    /** No ID field because only supporting single CPU. */
+    process_context_t *scheduler;   /** CPU scheduler context. */
+    process_t *running_proc;        /** The process running or NULL. */
+    // ... (TODO)
+};
+typedef struct cpu_state cpu_state_t;
 
 // Per-CPU state
 // struct cpu {
@@ -29,14 +30,6 @@
 //   int intena;                  // Were interrupts enabled before pushcli?
 //   struct proc *proc;           // The process running on this cpu or null
 // };
-
-
-/**
- * CPU global state externed.
- * Just a single struct (not an array) because Hux only aims to support
- * a single CPU.
- */
-// extern cpu_state_t cpu_state;
 
 
 #endif

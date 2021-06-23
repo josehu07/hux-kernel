@@ -5,7 +5,7 @@
 ![code-size](https://img.shields.io/github/languages/code-size/josehu07/hux-kernel?color=lightgrey)
 ![license](https://img.shields.io/github/license/josehu07/hux-kernel)
 
-Hux - An x86 32-bit toy operating system kernel built from scratch.
+Hux - An x86 32-bit toy operating system kernel built from scratch, following [the OSTEP book](http://pages.cs.wisc.edu/~remzi/OSTEP/) structure and terminology.
 
 |   Author    | Kernel Src LoC  | Tutorial LoC |
 |   :---:     |      :---:      |    :---:     |
@@ -29,11 +29,14 @@ With QEMU (recommended), download the CDROM image `hux.iso` and do:
 
 ```bash
 $ qemu-system-i386 -cdrom hux.iso
+
+// Or, if you clone the repo and build Hux yourself:
+$ make qemu
 ```
 
 You will see the QEMU GUI popping up with GRUB loaded. Choose the "`Hux`" option with <kbd>Enter</kbd> to boot into Hux.
 
-For development setup & instructions, please check out the wiki pages. I have every single detail documented there.
+For development setup & instructions, please check out the wiki pages (recommended). I have every single detail documented there.
 
 
 ## Goals
@@ -63,7 +66,7 @@ Main references:
 
 OS conceptual materials:
 
-- [Operating Systems: Three Easy Pieces](http://pages.cs.wisc.edu/~remzi/OSTEP/) (OSTEP) by Arpaci-Dusseaus
+- [Operating Systems: Three Easy Pieces](http://pages.cs.wisc.edu/~remzi/OSTEP/) (OSTEP) by Prof. Arpaci-Dusseaus
 - My [reading notes](https://www.josehu.com/notes) on OSTEP book & lectures
 
 Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kernel/wiki/01.-Prerequisite-Readings) for the full list.
