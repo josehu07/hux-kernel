@@ -10,28 +10,32 @@
 #include <stdint.h>
 
 
+/** Max number of processes at any time. */
+#define MAX_PROCS 128
+
+
 /** Process context registers defined to be saved across switches. */
-struct process_context {
-    uint32_t edi;
-    uint32_t esi;
-    uint32_t ebx;
-    uint32_t ebp;   /** Frame pointer. */
-    uint32_t eip;   /** Instruction pointer (PC). */
-    // Maybe kernel stack goes here as well?
-};
-typedef struct process_context process_context_t;
+// struct process_context {
+//     uint32_t edi;
+//     uint32_t esi;
+//     uint32_t ebx;
+//     uint32_t ebp;   /** Frame pointer. */
+//     uint32_t eip;   /** Instruction pointer (PC). */
+//     // Maybe kernel stack goes here as well?
+// };
+// typedef struct process_context process_context_t;
 
 
 /** Process state. */
-enum process_state {
-    UNUSED,     /** Indicates PCB slot unused. */
-    INITIAL,
-    READY,
-    RUNNING,
-    BLOCKED,
-    TERMINATED
-};
-typedef enum process_state process_state_t;
+// enum process_state {
+//     UNUSED,     /** Indicates PCB slot unused. */
+//     INITIAL,
+//     READY,
+//     RUNNING,
+//     BLOCKED,
+//     TERMINATED
+// };
+// typedef enum process_state process_state_t;
 
 // struct context {
 //   uint edi;
@@ -45,15 +49,13 @@ typedef enum process_state process_state_t;
 
 
 /** Process control block. */
-struct process {
-    char name[16];                  /** Process name. */
-    int pid;                        /** Process ID. */
-    process_context_t *context;     /** Registers context. */
-    process_state_t state;          /** Process state */
-    // ...
-}
-
-#define MAX_PROCS 128
+// struct process {
+//     char name[16];                  /** Process name. */
+//     int pid;                        /** Process ID. */
+//     process_context_t *context;     /** Registers context. */
+//     process_state_t state;          /** Process state */
+//     // ...
+// }
 
 // Per-process state
 // struct proc {
@@ -74,7 +76,7 @@ struct process {
 
 
 /** Process table externed. */
-extern process_t ptable[];
+// extern process_t ptable[];
 
 
 #endif

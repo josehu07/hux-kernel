@@ -3,18 +3,18 @@
  */
 
 
-#include <stddef.h>
-#include <stdint.h>
+// #include <stddef.h>
+// #include <stdint.h>
 
-#include "process.h"
-#include "cpu.h"
+// #include "process.h"
+// #include "cpu.h"
 
 
 /** Global CPU state (only a single CPU). */
-cpu_state_t cpu_state;
+// cpu_state_t cpu_state;
 
 /** Process table - list of PCB slots. */
-process_t ptable[MAX_PROCS];
+// process_t ptable[MAX_PROCS];
 
 
 // TODO

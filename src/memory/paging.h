@@ -80,6 +80,10 @@ typedef struct page_directory_entry pde_t;
 #define ENTRY_FRAME_ADDR(entry) (entry.frame << 12)
 
 
+/** Extern resulted `kheap_curr` for heap allocator initialization. */
+extern uint32_t kheap_curr;
+
+
 void paging_init();
 
 pte_t *paging_walk_pgdir(pde_t *pgdir, uint32_t vaddr, bool alloc);

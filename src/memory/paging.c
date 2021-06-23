@@ -17,7 +17,7 @@
 
 /** Temporary solution: kernel heap bottom address. */
 extern uint32_t bss_end;    /** Defined in linker script. */
-static uint32_t kheap_curr = (uint32_t) &bss_end;
+uint32_t kheap_curr = (uint32_t) &bss_end;
 
 /** Bitmap indicating free/used frames. */
 static uint32_t *frame_bitmap;

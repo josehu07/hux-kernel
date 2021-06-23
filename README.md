@@ -23,6 +23,19 @@ I document the whole development process of Hux - its skeleton, related theories
 If there are any typos / mistakes / errors, please raise an issue!
 
 
+## Playing with Hux
+
+With QEMU (recommended), download the CDROM image `hux.iso` and do:
+
+```bash
+$ qemu-system-i386 -cdrom hux.iso
+```
+
+You will see the QEMU GUI popping up with GRUB loaded. Choose the "`Hux`" option with <kbd>Enter</kbd> to boot into Hux.
+
+For development setup & instructions, please check out the wiki pages. I have every single detail documented there.
+
+
 ## Goals
 
 The main goal of Hux is to be **Understandable**: structured in a way that is easy to understand (not mimicking existing UNIX-like systems). OS development seems scary at first glance for beginners mostly because it involves too many hairy technical details. I admit that, in real-world systems, we must face the complexity to ensure compatibility, performance, robustness, security, etc. Yet, a toy kernel project would help demonstrate the key concepts of an operating system, including its most essential steps of development, layers of abstractions, and the ideas of virtualization, concurrency, and persistence.
@@ -39,26 +52,14 @@ I choose to write it in *C* language with `i386-IA32` architecture, since beginn
 These are general and long-term goals which I will (hopefully) follow throughout the project. I hope this can lead towards a full HuxOS which we can install on real devices and play with in the future (kept simple, of course 😁)
 
 
-## Playing with Hux
-
-With QEMU (recommended), download the CDROM image `hux.iso` and do:
-
-```bash
-$ qemu-system-i386 -cdrom hux.iso
-```
-
-You will see the QEMU GUI popping up with GRUB loaded. Choose the "`Hux`" option with <kbd>Enter</kbd> to boot into Hux.
-
-For development setup & instructions, please check out the wiki pages. I have every single detail documented there.
-
-
 ## References
 
 Main references:
 
 - [The OSDev Wiki](https://wiki.osdev.org/) (IMPORTANT ✭)
 - [JamesM's Kernel Tutorial](http://www.jamesmolloy.co.uk/tutorial_html/) by James, along with its [known bugs](https://wiki.osdev.org/James_Molloy's_Tutorial_Known_Bugs)
-- [Writing an OS in Rust](https://os.phil-opp.com/) by Philipp
+- [Writing an OS in Rust](https://os.phil-opp.com/) by Philipp (still updating...)
+- [The xv6 Kernel](https://github.com/mit-pdos/xv6-public) x86 ver. by MIT PDOS (no longer updated)
 
 OS conceptual materials:
 
@@ -85,3 +86,4 @@ Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kerne
 - [ ] Basic IDE disk driver
 - [ ] Very simple file system
 - [ ] Wiki pages & README
+- [ ] Extend Hux to Rux with Rust
