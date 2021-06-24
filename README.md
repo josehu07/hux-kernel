@@ -30,7 +30,7 @@ With QEMU (recommended), download the CDROM image `hux.iso` and do:
 ```bash
 $ qemu-system-i386 -cdrom hux.iso
 
-// Or, if you clone the repo and build Hux yourself:
+# Or, if you clone the repo and build Hux yourself:
 $ make qemu
 ```
 
