@@ -1,23 +1,25 @@
 /**
- * CPU state structure. Hux only aims to support a single CPU.
+ * CPU scheduler and context switching routines.
+ *
+ * Hux only aims to support a single CPU.
  */
 
 
-#ifndef CPU_H
-#define CPU_H
+#ifndef SCHEDULER_H
+#define SCHEDULER_H
 
 
 #include "process.h"
 
 
 /** Per-CPU state (we only have a single CPU). */
-// struct cpu_state {
-//     /** No ID field because only supporting single CPU. */
-//     process_context_t *scheduler;   /** CPU scheduler context. */
-//     process_t *running_proc;        /** The process running or NULL. */
-//     // ... (TODO)
-// };
-// typedef struct cpu_state cpu_state_t;
+struct cpu_state {
+    /** No ID field because only supporting single CPU. */
+    process_context_t *scheduler;   /** CPU scheduler context. */
+    process_t *running_proc;        /** The process running or NULL. */
+    // ... (TODO)
+};
+typedef struct cpu_state cpu_state_t;
 
 // Per-CPU state
 // struct cpu {
@@ -30,6 +32,11 @@
 //   int intena;                  // Were interrupts enabled before pushcli?
 //   struct proc *proc;           // The process running on this cpu or null
 // };
+
+
+void cpu_init();
+
+void scheduler();
 
 
 #endif

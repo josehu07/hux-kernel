@@ -26,6 +26,9 @@
 #include "memory/slabs.h"
 #include "memory/kheap.h"
 
+#include "process/process.h"
+#include "process/scheduler.h"
+
 #include "device/timer.h"
 #include "device/keyboard.h"
 
@@ -123,23 +126,24 @@ kernel_main(unsigned long magic, unsigned long addr)
     info("kernel page SLAB list starts at %p", PAGE_SLAB_MIN);
     info("kernel flexible heap  starts at %p", kheap_curr);
 
+    /** Initialize CPu state, process structures, and the `init` process. */
+    _init_message("initializing CPU state and process structures");
+    cpu_init();
+    process_init();
+    initproc_init();
+    _init_message_ok();
+    info("maximum number of processes: %d", MAX_PROCS);
+
     /** Executes `sti`, CPU starts taking in interrupts. */
     _enable_interrupts();
 
-    printf("\nSallocing page1...\n");
-    char *block1 = (char *) salloc_page();
-    printf("block 1 @ %p\n", block1);
-
-    printf("\nSallocing page2...\n");
-    char *block2 = (char *) salloc_page();
-    printf("block 2 @ %p\n", block2);
-
-    printf("\nSfreeing page1...\n");
-    sfree_page(block1);
-
-    printf("\nSallocing page3, should reuse the highest node...\n");
-    char *block3 = (char *) salloc_page();
-    printf("block 3 @ %p\n", block3);
+    /**
+     * Jump into the scheduler. For now, it will pick up the only ready
+     * process which is `init` and context switch to it, then never
+     * switching back.
+     */
+    printf("\nShould see a white letter 'H' in the second to last VGA line\n");
+    scheduler();
 
     while (1)   // CPU idles with a `hlt` loop.
         asm volatile ( "hlt" );
