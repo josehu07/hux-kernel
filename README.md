@@ -7,10 +7,10 @@
 
 Hux - An x86 32-bit toy operating system kernel built from scratch, following [the OSTEP book](http://pages.cs.wisc.edu/~remzi/OSTEP/) structure and terminology.
 
-|   Author    | Kernel Src LoC  | Tutorial LoC |
-|   :---:     |      :---:      |    :---:     |
-| Guanzhou Hu |   C + x86 ASM   |   Markdown   |
-|  Jun. 2021  |       ???       |     ???      |
+|   Author    | Kernel Src LoC (temp)  | Tutorial LoC (temp) |
+|   :---:     |         :---:          |       :---:         |
+| Guanzhou Hu |      C + x86 ASM       |      Markdown       |
+|  Jun. 2021  |         4975           |        4397         |
 
 
 ## Tutorial / Development Doc
