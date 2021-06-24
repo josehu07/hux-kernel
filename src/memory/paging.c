@@ -15,9 +15,8 @@
 #include "../interrupt/isr.h"
 
 
-/** Temporary solution: kernel heap bottom address. */
-extern uint32_t bss_end;    /** Defined in linker script. */
-uint32_t kheap_curr = (uint32_t) &bss_end;
+/** Kernel heap bottom address - should be above `elf_shstrtab_end`. */
+uint32_t kheap_curr;
 
 /** Bitmap indicating free/used frames. */
 static uint32_t *frame_bitmap;
@@ -206,6 +205,9 @@ page_fault_handler(interrupt_state_t *state)
 void
 paging_init(void)
 {
+    /** Kernel heap starts above all ELF sections. */
+    kheap_curr = ADDR_PAGE_ROUND_UP((uint32_t) elf_shstrtab_end);
+
     /**
      * The frame bitmap also needs space, so allocate space for it in
      * our kernel heap. Clear it to zeros.

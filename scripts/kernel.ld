@@ -38,6 +38,4 @@ SECTIONS
         *(.bss)     /** Includes our 16KiB temporary stack. */
         *(COMMON)
     }
-
-    bss_end = .;    /** For marking the start of kernel heap. */
 }

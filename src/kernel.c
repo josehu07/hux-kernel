@@ -137,6 +137,9 @@ kernel_main(unsigned long magic, unsigned long addr)
     /** Executes `sti`, CPU starts taking in interrupts. */
     _enable_interrupts();
 
+    char *temp = (char *) 0xFFFF0000;
+    *temp = 'A';
+
     /**
      * Jump into the scheduler. For now, it will pick up the only ready
      * process which is `init` and context switch to it, then never

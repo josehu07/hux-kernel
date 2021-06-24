@@ -15,6 +15,10 @@
 #include "../boot/multiboot.h"
 
 
+/** For marking the begin of kernel heap. */
+extern uint32_t elf_shstrtab_end;
+
+
 void debug_init(multiboot_info_t *mbi);
 
 void stack_trace();

@@ -23,6 +23,10 @@ static const char *elf_strtab;
 static size_t elf_strtab_size;
 
 
+/** For marking the end of all sections. Kernel heap begins here. */
+uint32_t elf_shstrtab_end;
+
+
 /** Look up an address in symbols map and return its function name. */
 static const char *
 _lookup_symbol_name(uint32_t addr)
@@ -59,7 +63,13 @@ debug_init(multiboot_info_t *mbi)
      */
     const char *sh_names = (const char *) sht[mbi->elf_sht.shndx].addr;
 
-    /** Loop through the table and look for ".symtab" & ".strtab". */
+    /**
+     * Loop through the table and look for ".symtab" & ".strtab".
+     *
+     * Also look for the address and size of ".shstrtab" because that will
+     * be the very last section of the kernel ELF. Our kernel heap memory
+     * starts after it.
+     */
     for (size_t i = 0; i < sht_len; ++i) {
         const char *name = sh_names + sht[i].name;
         if (strncmp(name, ".symtab", 7) == 0) {
@@ -68,7 +78,8 @@ debug_init(multiboot_info_t *mbi)
         } else if (strncmp(name, ".strtab", 7) == 0) {
             elf_strtab = (const char *) sht[i].addr;
             elf_strtab_size = sht[i].size;
-        }
+        } else if (strncmp(name, ".shstrtab", 9) == 0)
+            elf_shstrtab_end = sht[i].addr + sht[i].size;
     }
 }
 
