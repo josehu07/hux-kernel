@@ -9,13 +9,9 @@
 .type start, @function
 start:
 
-    /**
-     * Prints a letter 'H' in the second to last VGA line, just to show
-     * that init gets executed. Please ignore the dirty numbers.
-     */
-    movl $0xB8000, %eax
-    movw $0x0F48, %bx
-    movw %bx, 3720(%eax)
+    /** Trigger a page fault by accessing unmapped memory address. */
+    movl $0x40000000, %eax
+    movl (%eax), %ebx
 
     /** Infinite halt loop trick. */
     cli

@@ -33,7 +33,7 @@ timer_interrupt_handler(interrupt_state_t *state)
  * PIT to run in mode 3 with given frequency in Hz.
  */
 void
-timer_init(uint16_t freq_hz)
+timer_init(void)
 {
     /** Register timer interrupt ISR handler. */
     isr_register(INT_NO_TIMER, &timer_interrupt_handler);
@@ -42,7 +42,7 @@ timer_init(uint16_t freq_hz)
      * Calculate the frequency divisor needed to run with the given
      * frequency. Divisor = base frequencty / desired frequency.
      */
-    uint16_t divisor = 1193182 / freq_hz;
+    uint16_t divisor = 1193182 / TIMER_FREQ_HZ;
 
     outb(0x43, 0x36);   /** Run in mode 3. */
 

@@ -38,6 +38,10 @@ struct idt_register
 typedef struct idt_register idt_register_t;
 
 
+/** Length of IDT. */
+#define NUM_GATE_ENTRIES 256
+
+
 void idt_init();
 
 

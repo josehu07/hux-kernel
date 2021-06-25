@@ -8,9 +8,10 @@
 
 
 /**
- * We make 32 wrappers for all 32 trap gates. Trap gates will automatically
- * disable interrupts and restore interrupts when entering and leaving
- * ISR, so no need of `cli` and `sti` here.
+ * We make 32 wrappers for all 32 exception gates. We registered them as
+ * interrupt gates so they will automatically disable interrupts and restore
+ * interrupts when entering and leaving ISR, so no need of `cli` and `sti`
+ * here.
  *
  * Traps # 8, 10, 11, 12, 13, 14, 17, or 21 will have a CPU-pushed error
  * code, and for all others we push a dummy one.
@@ -347,6 +348,17 @@ irq15:
     pushl $47               /** Interrupt index code. */
     jmp isr_handler_stub    /** Jump to handler stub. */
 
+/**
+ * The wrapper for the syscall trap handler. Calls the centralized ISR
+ * handler stub as well.
+ */
+.global syscall_handler
+.type syscall_handler, @function
+syscall_handler:
+    pushl $0
+    pushl $64
+    jmp isr_handler_stub
+
 
 /**
  * Handler stub. Saves processor state, load kernel data segment, pushes
@@ -391,6 +403,10 @@ isr_handler_stub:
     /** == ISR handler finishes.  == **/
 
     addl $4, %esp   /** Cleans up the pointer argument. */
+
+/** Return falls through to the `return_from_trap` snippet below. */
+.global return_from_trap
+return_from_trap:
 
     /** Restore previous segment descriptor. */
     popl %eax

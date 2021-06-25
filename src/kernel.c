@@ -33,25 +33,6 @@
 #include "device/keyboard.h"
 
 
-/**
- * Enabling interrupts by executing the `sti` instruction.
- * This should be called after all devices have been initialized, so that
- * the CPU starts taking in interrupts.
- */
-inline void
-_enable_interrupts()
-{
-    asm volatile ( "sti" );
-}
-
-/** Disables interrupts by executing the `cli` instruction. */
-inline void
-_disable_interrupts()
-{
-    asm volatile ( "cli" );
-}
-
-
 /** Displaying initialization progress message. */
 static inline void
 _init_message(char *msg)
@@ -101,10 +82,9 @@ kernel_main(unsigned long magic, unsigned long addr)
 
     /** Initialize PIT timer at 100 Hz frequency. */
     _init_message("kicking off the PIT timer & interrupts");
-    uint16_t timer_freq_hz = 100;
-    timer_init(timer_freq_hz);
+    timer_init();
     _init_message_ok();
-    info("timer frequency is set to %dHz", timer_freq_hz);
+    info("timer frequency is set to %dHz", TIMER_FREQ_HZ);
 
     /** Initialize PS/2 keyboard support. */
     _init_message("initializing PS/2 keybaord support");
@@ -118,7 +98,7 @@ kernel_main(unsigned long magic, unsigned long addr)
     info("supporting physical memory size: %3dMiB", NUM_FRAMES * 4 / 1024);
     info("reserving memory for the kernel: %3dMiB", KMEM_MAX / 1024 / 1024);
 
-    /** Initialize the kernel heap allocator. */
+    /** Initialize the kernel heap allocators. */
     _init_message("initializing kernel heap memory allocators");
     page_slab_init();
     kheap_init();
@@ -135,17 +115,13 @@ kernel_main(unsigned long magic, unsigned long addr)
     info("maximum number of processes: %d", MAX_PROCS);
 
     /** Executes `sti`, CPU starts taking in interrupts. */
-    _enable_interrupts();
-
-    char *temp = (char *) 0xFFFF0000;
-    *temp = 'A';
+    asm volatile ( "sti" );
 
     /**
      * Jump into the scheduler. For now, it will pick up the only ready
      * process which is `init` and context switch to it, then never
      * switching back.
      */
-    printf("\nShould see a white letter 'H' in the second to last VGA line\n");
     scheduler();
 
     while (1)   // CPU idles with a `hlt` loop.

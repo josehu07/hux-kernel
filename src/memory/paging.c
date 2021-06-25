@@ -14,19 +14,17 @@
 
 #include "../interrupt/isr.h"
 
+#include "../memory/slabs.h"
+
 
 /** Kernel heap bottom address - should be above `elf_shstrtab_end`. */
 uint32_t kheap_curr;
 
+/** kernel's identity-mapping page directory. */
+pde_t *kernel_pgdir;    /** Allocated at paging init. */
+
 /** Bitmap indicating free/used frames. */
 static uint32_t *frame_bitmap;
-
-/**
- * Pointer to current active page directory, may be the kernel's page
- * directory or the current running process's page directory.
- */
-static pde_t *active_pgdir;
-static pde_t *kernel_pgdir;     /** Allocated at paging init. */
 
 
 /**
@@ -59,8 +57,8 @@ _kalloc_temp(size_t size, bool page_align)
  * data structure. Every bit indicates the free/used state of a corresponding
  * physical frame. Frame number one-one maps to bit index.
  */
-#define BITMAP_OUTER_IDX(frame_num) (frame_num / 32)
-#define BITMAP_INNER_IDX(frame_num) (frame_num % 32)
+#define BITMAP_OUTER_IDX(frame_num) ((frame_num) / 32)
+#define BITMAP_INNER_IDX(frame_num) ((frame_num) % 32)
 
 /** Set a frame as used. */
 static inline void
@@ -120,14 +118,14 @@ frame_bitmap_alloc(void)
  * allocated yet, will perform the allocation.
  */
 pte_t *
-paging_walk_pgdir(pde_t *pgdir, uint32_t vaddr, bool alloc)
+paging_walk_pgdir(pde_t *pgdir, uint32_t vaddr, bool alloc, bool boot)
 {
     size_t pde_idx = ADDR_PDE_INDEX(vaddr);
     size_t pte_idx = ADDR_PTE_INDEX(vaddr);
 
     /** If already has the level-2 table, return the correct PTE. */
     if (pgdir[pde_idx].present != 0) {
-        pte_t *pgtab = (pte_t *) ENTRY_FRAME_ADDR((uint32_t) pgdir[pde_idx]);
+        pte_t *pgtab = (pte_t *) ENTRY_FRAME_ADDR(pgdir[pde_idx]);
         return &pgtab[pte_idx];
     }
 
@@ -138,7 +136,12 @@ paging_walk_pgdir(pde_t *pgdir, uint32_t vaddr, bool alloc)
     if (!alloc)
         return NULL;
 
-    pte_t *pgtab = (pte_t *) _kalloc_temp(sizeof(pte_t) * PTES_PER_PAGE, true);
+    pte_t *pgtab = NULL;
+    if (boot)
+        pgtab = (pte_t *) _kalloc_temp(sizeof(pte_t) * PTES_PER_PAGE, true);
+    else
+        pgtab = (pte_t *) salloc_page();
+    assert(pgtab != NULL);
     memset(pgtab, 0, sizeof(pte_t) * PTES_PER_PAGE);
 
     pgdir[pde_idx].present = 1;
@@ -149,12 +152,110 @@ paging_walk_pgdir(pde_t *pgdir, uint32_t vaddr, bool alloc)
     return &pgtab[pte_idx];
 }
 
+/** Dealloc all the kernal heap pages used in a user page directory. */
+void
+paging_destroy_pgdir(pde_t *pgdir)
+{
+    for (size_t pde_idx = 0; pde_idx < PDES_PER_PAGE; ++pde_idx) {
+        if (pgdir[pde_idx].present == 1) {
+            pte_t *pgtab = (pte_t *) ENTRY_FRAME_ADDR(pgdir[pde_idx]);
+            sfree_page(pgtab);
+        }
+    }
+
+    /** Free the level-1 directory as well. */
+    sfree_page(pgdir);
+}
+
+
+/**
+ * Find a free frame and map a user page (given by a pointer to its PTE)
+ * into physical memory. Returns the physical address allocated.
+ */
+uint32_t
+paging_map_upage(pte_t *pte, bool writable)
+{
+    uint32_t frame_num = frame_bitmap_alloc();
+
+    pte->present = 1;
+    pte->writable = writable ? 1 : 0;
+    pte->user = 1;
+    pte->frame = frame_num;
+
+    uint32_t paddr = ENTRY_FRAME_ADDR((*pte));
+
+    /**
+     * Identity-map the physical address into kernel page table, if
+     * haven't done so for this physical address. This is kind of like
+     * a "lazy" identity-paging on the kernel side.
+     */
+    pte_t *kpte = paging_walk_pgdir(kernel_pgdir, paddr, true, false);
+    if (kpte->present != 1) {
+        kpte->present = 1;
+        kpte->writable = 0;     /** Has no affect. */
+        kpte->user = 0;
+        kpte->frame = frame_num;
+    }
+
+    return paddr;
+}
+
+/** Map a lower-half kernel page to the user PTE. */
+void
+paging_map_kpage(pte_t *pte, uint32_t paddr)
+{
+    uint32_t frame_num = ADDR_PAGE_NUMBER(paddr);
+
+    pte->present = 1;
+    pte->writable = 0;
+    pte->user = 0;      /** User cannot access kernel-mapped pages. */
+    pte->frame = frame_num;
+}
+
+/**
+ * Unmap all the mapped pages within a virtual address range in a user
+ * page directory. Avoids calling `wake_pgdir()` repeatedly.
+ */
+void
+paging_unmap_range(pde_t *pgdir, uint32_t va_start, uint32_t va_end)
+{
+    size_t pde_idx = ADDR_PDE_INDEX(va_start);
+    size_t pte_idx = ADDR_PTE_INDEX(va_start);
+
+    size_t pde_end = ADDR_PDE_INDEX(ADDR_PAGE_ROUND_UP(va_end));
+    size_t pte_end = ADDR_PTE_INDEX(ADDR_PAGE_ROUND_UP(va_end));
+
+    pte_t *pgtab = (pte_t *) ENTRY_FRAME_ADDR(pgdir[pde_idx]);
+
+    while (pde_idx <= pde_end && pte_idx < pte_end) {
+        /**
+         * If end of current level-2 table, or current level-2 table not
+         * allocated, go to the next PDE.
+         */
+        if (pte_idx >= PTES_PER_PAGE || pgdir[pde_idx].present == 0) {
+            pde_idx++;
+            pte_idx = 0;
+            pgtab = (pte_t *) ENTRY_FRAME_ADDR(pgdir[pde_idx]);
+            continue;
+        }
+
+        if (pgtab[pte_idx].present == 1) {
+            frame_bitmap_clear(pgtab[pte_idx].frame);
+            pgtab[pte_idx].present = 0;
+            pgtab[pte_idx].writable = 0;
+            pgtab[pte_idx].frame = 0;
+        }
+
+        pte_idx++;
+    }
+}
+
 
 /** Switch the current page directory to the given one. */
-void
+inline void
 paging_switch_pgdir(pde_t *pgdir)
 {
-    active_pgdir = pgdir;
+    assert(pgdir != NULL);
     asm volatile ( "movl %0, %%cr3" : : "r" (pgdir) );
 }
 
@@ -188,15 +289,6 @@ page_fault_handler(interrupt_state_t *state)
          "  user:    %d\n"
          "}", vaddr, present, write, user);
 
-    /**
-     * Temporary incomplete handler logic: alloc a frame for the faulty
-     * page if it is the kernel trying to read a faulty address which
-     * is not present.
-     */
-    // if ((!present) && (!user)) {
-    //     pte_t *pte = paging_walk_pgdir(kernel_pgdir, vaddr, true);
-
-    // }
     panic("page fault not handled!");
 }
 
@@ -222,22 +314,21 @@ paging_init(void)
      */
     kernel_pgdir = (pde_t *) _kalloc_temp(sizeof(pde_t) * PDES_PER_PAGE, true);
     memset(kernel_pgdir, 0, sizeof(pde_t) * PDES_PER_PAGE);
-    active_pgdir = kernel_pgdir;
 
     /**
      * Identity-map the kernel's virtual address space to the physical
      * memory. This means we need to map all the allowed kernel physical
      * frames (from 0 -> KMEM_MAX) as its identity virtual address in
-     * the kernel page table.
+     * the kernel page table, and reserve this entire physical memory region.
      */
     uint32_t addr = 0;
     while (addr < KMEM_MAX) {
         uint32_t frame_num = frame_bitmap_alloc();
-        pte_t *pte = paging_walk_pgdir(kernel_pgdir, addr, true);
+        pte_t *pte = paging_walk_pgdir(kernel_pgdir, addr, true, true);
 
         /** Update the bits in this PTE. */
         pte->present = 1;
-        pte->writable = 0;
+        pte->writable = 0;      /** Has no affect. */
         pte->user = 0;
         pte->frame = frame_num;
 
@@ -248,7 +339,7 @@ paging_init(void)
      * Register the page fault handler. This acation must be done before
      * we do the acatual switch towards using paging.
      */
-    isr_register(INT_NO_PAGE_FAULT, page_fault_handler);
+    isr_register(INT_NO_PAGE_FAULT, &page_fault_handler);
 
     /** Load the address of kernel page directory into CR3. */
     paging_switch_pgdir(kernel_pgdir);

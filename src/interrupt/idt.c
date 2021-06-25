@@ -6,9 +6,12 @@
 #include <stdint.h>
 
 #include "idt.h"
+#include "syscall.h"
 
 #include "../common/string.h"
 #include "../common/port.h"
+
+#include "../memory/gdt.h"
 
 
 /**
@@ -16,7 +19,7 @@
  *   -  0 -  31: reserved by x86 CPU for various exceptions
  *   - 32 - 255: free for our OS kernel to define
  */
-static idt_gate_t idt[256];
+static idt_gate_t idt[NUM_GATE_ENTRIES];
 
 /** IDTR address register. */
 static idt_register_t idtr;
@@ -94,6 +97,9 @@ extern void irq13(void);
 extern void irq14(void);
 extern void irq15(void);
 
+/** Extern the syscall trap gate handler. */
+extern void syscall_handler(void);
+
 
 /**
  * Initialize the interrupt descriptor table (IDT) by setting up gate
@@ -153,59 +159,70 @@ idt_init()
      */
     memset(idt, 0, sizeof(idt_gate_t) * 256);
 
-    idt_set_gate(0 , (uint32_t) isr0 , 0x08, 0x8F);
-    idt_set_gate(1 , (uint32_t) isr1 , 0x08, 0x8F);
-    idt_set_gate(2 , (uint32_t) isr2 , 0x08, 0x8F);
-    idt_set_gate(3 , (uint32_t) isr3 , 0x08, 0x8F);
-    idt_set_gate(4 , (uint32_t) isr4 , 0x08, 0x8F);
-    idt_set_gate(5 , (uint32_t) isr5 , 0x08, 0x8F);
-    idt_set_gate(6 , (uint32_t) isr6 , 0x08, 0x8F);
-    idt_set_gate(7 , (uint32_t) isr7 , 0x08, 0x8F);
-    idt_set_gate(8 , (uint32_t) isr8 , 0x08, 0x8F);
-    idt_set_gate(9 , (uint32_t) isr9 , 0x08, 0x8F);
-    idt_set_gate(10, (uint32_t) isr10, 0x08, 0x8F);
-    idt_set_gate(11, (uint32_t) isr11, 0x08, 0x8F);
-    idt_set_gate(12, (uint32_t) isr12, 0x08, 0x8F);
-    idt_set_gate(13, (uint32_t) isr13, 0x08, 0x8F);
-    idt_set_gate(14, (uint32_t) isr14, 0x08, 0x8F);
-    idt_set_gate(15, (uint32_t) isr15, 0x08, 0x8F);
-    idt_set_gate(16, (uint32_t) isr16, 0x08, 0x8F);
-    idt_set_gate(17, (uint32_t) isr17, 0x08, 0x8F);
-    idt_set_gate(18, (uint32_t) isr18, 0x08, 0x8F);
-    idt_set_gate(19, (uint32_t) isr19, 0x08, 0x8F);
-    idt_set_gate(20, (uint32_t) isr20, 0x08, 0x8F);
-    idt_set_gate(21, (uint32_t) isr21, 0x08, 0x8F);
-    idt_set_gate(22, (uint32_t) isr22, 0x08, 0x8F);
-    idt_set_gate(23, (uint32_t) isr23, 0x08, 0x8F);
-    idt_set_gate(24, (uint32_t) isr24, 0x08, 0x8F);
-    idt_set_gate(25, (uint32_t) isr25, 0x08, 0x8F);
-    idt_set_gate(26, (uint32_t) isr26, 0x08, 0x8F);
-    idt_set_gate(27, (uint32_t) isr27, 0x08, 0x8F);
-    idt_set_gate(28, (uint32_t) isr28, 0x08, 0x8F);
-    idt_set_gate(29, (uint32_t) isr29, 0x08, 0x8F);
-    idt_set_gate(30, (uint32_t) isr30, 0x08, 0x8F);
-    idt_set_gate(31, (uint32_t) isr31, 0x08, 0x8F);
+    idt_set_gate(0 , (uint32_t) isr0 , 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(1 , (uint32_t) isr1 , 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(2 , (uint32_t) isr2 , 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(3 , (uint32_t) isr3 , 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(4 , (uint32_t) isr4 , 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(5 , (uint32_t) isr5 , 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(6 , (uint32_t) isr6 , 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(7 , (uint32_t) isr7 , 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(8 , (uint32_t) isr8 , 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(9 , (uint32_t) isr9 , 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(10, (uint32_t) isr10, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(11, (uint32_t) isr11, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(12, (uint32_t) isr12, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(13, (uint32_t) isr13, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(14, (uint32_t) isr14, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(15, (uint32_t) isr15, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(16, (uint32_t) isr16, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(17, (uint32_t) isr17, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(18, (uint32_t) isr18, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(19, (uint32_t) isr19, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(20, (uint32_t) isr20, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(21, (uint32_t) isr21, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(22, (uint32_t) isr22, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(23, (uint32_t) isr23, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(24, (uint32_t) isr24, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(25, (uint32_t) isr25, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(26, (uint32_t) isr26, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(27, (uint32_t) isr27, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(28, (uint32_t) isr28, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(29, (uint32_t) isr29, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(30, (uint32_t) isr30, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(31, (uint32_t) isr31, 8 * SEGMENT_KCODE, 0x8E);
 
     /** These are for PIC IRQs (remapped). */
-    idt_set_gate(32, (uint32_t) irq0 , 0x08, 0x8F);
-    idt_set_gate(33, (uint32_t) irq1 , 0x08, 0x8F);
-    idt_set_gate(34, (uint32_t) irq2 , 0x08, 0x8F);
-    idt_set_gate(35, (uint32_t) irq3 , 0x08, 0x8F);
-    idt_set_gate(36, (uint32_t) irq4 , 0x08, 0x8F);
-    idt_set_gate(37, (uint32_t) irq5 , 0x08, 0x8F);
-    idt_set_gate(38, (uint32_t) irq6 , 0x08, 0x8F);
-    idt_set_gate(39, (uint32_t) irq7 , 0x08, 0x8F);
-    idt_set_gate(40, (uint32_t) irq8 , 0x08, 0x8F);
-    idt_set_gate(41, (uint32_t) irq9 , 0x08, 0x8F);
-    idt_set_gate(42, (uint32_t) irq10, 0x08, 0x8F);
-    idt_set_gate(43, (uint32_t) irq11, 0x08, 0x8F);
-    idt_set_gate(44, (uint32_t) irq12, 0x08, 0x8F);
-    idt_set_gate(45, (uint32_t) irq13, 0x08, 0x8F);
-    idt_set_gate(46, (uint32_t) irq14, 0x08, 0x8F);
-    idt_set_gate(47, (uint32_t) irq15, 0x08, 0x8F);
+    idt_set_gate(32, (uint32_t) irq0 , 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(33, (uint32_t) irq1 , 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(34, (uint32_t) irq2 , 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(35, (uint32_t) irq3 , 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(36, (uint32_t) irq4 , 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(37, (uint32_t) irq5 , 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(38, (uint32_t) irq6 , 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(39, (uint32_t) irq7 , 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(40, (uint32_t) irq8 , 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(41, (uint32_t) irq9 , 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(42, (uint32_t) irq10, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(43, (uint32_t) irq11, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(44, (uint32_t) irq12, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(45, (uint32_t) irq13, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(46, (uint32_t) irq14, 8 * SEGMENT_KCODE, 0x8E);
+    idt_set_gate(47, (uint32_t) irq15, 8 * SEGMENT_KCODE, 0x8E);
+
+    /**
+     * Register user syscall trap gate. The flag here is different in
+     * two fields:
+     *   - DPL: user process is in privilege ring 3 instead of 0
+     *   - Type: syscall gate is normally registered as a "trap gate"
+     *           instead of "interrupt gate"; trap gates do not disable
+     *           interrupts automatically upon entry
+     */
+    idt_set_gate(INT_NO_SYSCALL, (uint32_t) syscall_handler,
+                 8 * SEGMENT_KCODE, 0xEF);
 
     /** Setup the IDTR register value. */
-    idtr.boundary = (sizeof(idt_gate_t) * 256) - 1;     /** Length - 1. */
+    idtr.boundary = (sizeof(idt_gate_t) * NUM_GATE_ENTRIES) - 1;
     idtr.base     = (uint32_t) &idt;
 
     /**

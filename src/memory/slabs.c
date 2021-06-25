@@ -10,6 +10,7 @@
 #include "paging.h"
 
 #include "../common/debug.h"
+#include "../common/string.h"
 
 
 /** Page-granularity SLAB free-list. */
@@ -28,14 +29,18 @@ static slab_node_t *page_slab_freelist;
 static uint32_t
 _salloc_internal(slab_node_t **freelist)
 {
-    if (freelist == NULL)
+    if (freelist == NULL) {
         error("salloc failed: given free-list is NULL");
+        return 0;
+    }
 
     slab_node_t *node = *freelist;
 
     /** No slab is free, time to panic. */
-    if (node == NULL)
+    if (node == NULL) {
         error("salloc failed: there is no free slab");
+        return 0;
+    }
 
     *freelist = node->next;
     return (uint32_t) node;
@@ -77,6 +82,9 @@ sfree_page(void *addr)
         return;
     }
 
+    /** Fill with zero bytes to catch dangling pointers use. */
+    memset((char *) addr, 0, PAGE_SIZE);
+    
     _sfree_internal(&page_slab_freelist, addr);
 }
 

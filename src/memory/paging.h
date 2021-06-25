@@ -27,15 +27,15 @@
 
 
 /** Helper macros on addresses and page alignments. */
-#define ADDR_PAGE_OFFSET(addr) (addr & 0x00000FFF)
-#define ADDR_PAGE_NUMBER(addr) (addr >> 12)
+#define ADDR_PAGE_OFFSET(addr) ((addr) & 0x00000FFF)
+#define ADDR_PAGE_NUMBER(addr) ((addr) >> 12)
 
 #define ADDR_PDE_INDEX(addr) (ADDR_PAGE_NUMBER(addr) / 1024)
 #define ADDR_PTE_INDEX(addr) (ADDR_PAGE_NUMBER(addr) % 1024)
 
 #define ADDR_PAGE_ALIGNED(addr) (ADDR_PAGE_OFFSET(addr) == 0)
 
-#define ADDR_PAGE_ROUND_DN(addr) (addr & 0xFFFFF000)
+#define ADDR_PAGE_ROUND_DN(addr) ((addr) & 0xFFFFF000)
 #define ADDR_PAGE_ROUND_UP(addr) (ADDR_PAGE_ROUND_DN(addr) + 0x1000)
 
 
@@ -79,16 +79,25 @@ struct page_directory_entry
 typedef struct page_directory_entry pde_t;
 
 /** Helper macro on getting the pointed-to address stored in an entry. */
-#define ENTRY_FRAME_ADDR(entry) (entry.frame << 12)
+#define ENTRY_FRAME_ADDR(entry) ((entry).frame << 12)
 
 
 /** Extern resulted `kheap_curr` for heap allocator initialization. */
 extern uint32_t kheap_curr;
 
 
+/** Extern the kernel page directory pointer to the scheduler. */
+extern pde_t *kernel_pgdir;
+
+
 void paging_init();
 
-pte_t *paging_walk_pgdir(pde_t *pgdir, uint32_t vaddr, bool alloc);
+pte_t *paging_walk_pgdir(pde_t *pgdir, uint32_t vaddr, bool alloc, bool boot);
+void paging_destroy_pgdir(pde_t *pgdir);
+
+uint32_t paging_map_upage(pte_t *pte, bool writable);
+void paging_map_kpage(pte_t *pte, uint32_t paddr);
+void paging_unmap_range(pde_t *pgdir, uint32_t va_start, uint32_t va_end);
 
 void paging_switch_pgdir(pde_t *pgdir);
 

@@ -42,8 +42,8 @@ typedef struct free_list_node_header fl_header_t;
 
 
 /** Pointer arithmetics helper macros. */
-#define HEADER_TO_OBJECT(header) (header + sizeof(fl_header_t))
-#define OBJECT_TO_HEADER(object) (object - sizeof(fl_header_t))
+#define HEADER_TO_OBJECT(header) ((header) + sizeof(fl_header_t))
+#define OBJECT_TO_HEADER(object) ((object) - sizeof(fl_header_t))
 
 
 void kheap_init();

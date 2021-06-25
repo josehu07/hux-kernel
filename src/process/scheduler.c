@@ -10,7 +10,11 @@
 #include "scheduler.h"
 #include "process.h"
 
+#include "../common/string.h"
 #include "../common/debug.h"
+
+#include "../memory/gdt.h"
+#include "../memory/paging.h"
 
 
 /** Global CPU state (only a single CPU). */
@@ -25,7 +29,7 @@ extern void context_switch(process_context_t **old, process_context_t *new);
 void
 scheduler(void)
 {
-    cpu_state.running_proc = 0;
+    cpu_state.running_proc = NULL;
 
     while (1) {     /** Loop indefinitely. */
         /** Look for a ready process in ptable. */
@@ -36,56 +40,22 @@ scheduler(void)
 
             info("scheduler: going to context switch to '%s'", proc->name);
 
-            /**
-             * Switch to chosen process.
-             *
-             * This is temprorary so we are not switching to user mode;
-             * just doing a context switch of registers.
-             */
+            /** Set up TSS for this process, and switch page directory. */
+            gdt_switch_tss(&(cpu_state.task_state), proc);
+            paging_switch_pgdir(proc->pgdir);
+            
             cpu_state.running_proc = proc;
-            context_switch(&(cpu_state.scheduler), proc->context);
-            /** Our demo init process never switches back... */
+            proc->state = RUNNING;
 
+            /** Do the context switch. */
+            context_switch(&(cpu_state.scheduler), proc->context);
+
+            /** It switches back, switch to kernel page directory. */
+            paging_switch_pgdir(kernel_pgdir);
             cpu_state.running_proc = NULL;
         }
     }
 }
-
-// void
-// scheduler(void)
-// {
-//     struct proc *p;
-//     struct cpu *c = mycpu();
-//     c->proc = 0;
-    
-//     for(;;){
-//         // Enable interrupts on this processor.
-//         sti();
-
-//         // Loop over process table looking for process to run.
-//         acquire(&ptable.lock);
-//         for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-//             if(p->state != RUNNABLE)
-//                 continue;
-
-//             // Switch to chosen process.  It is the process's job
-//             // to release ptable.lock and then reacquire it
-//             // before jumping back to us.
-//             c->proc = p;
-//             switchuvm(p);
-//             p->state = RUNNING;
-
-//             swtch(&(c->scheduler), p->context);
-//             switchkvm();
-
-//             // Process is done running for now.
-//             // It should have changed its p->state before coming back.
-//             c->proc = 0;
-//         }
-//         release(&ptable.lock);
-
-//     }
-// }
 
 
 /** Initialize CPU state. */
@@ -94,4 +64,5 @@ cpu_init(void)
 {
     cpu_state.scheduler = NULL;     /** Will be set at context switch. */
     cpu_state.running_proc = NULL;
+    memset(&(cpu_state.task_state), 0, sizeof(tss_t));
 }

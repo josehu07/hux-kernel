@@ -9,6 +9,9 @@
 
 #include <stdint.h>
 
+#include "../process/process.h"
+#include "../process/scheduler.h"
+
 
 /**
  * GDT entry format.
@@ -39,7 +42,20 @@ struct gdt_register
 typedef struct gdt_register gdt_register_t;
 
 
+/** List of segments registered in GDT. */
+#define SEGMENT_UNUSED 0x0
+#define SEGMENT_KCODE  0x1
+#define SEGMENT_KDATA  0x2
+#define SEGMENT_UCODE  0x3
+#define SEGMENT_UDATA  0x4
+#define SEGMENT_TSS    0x5
+
+#define NUM_SEGMENTS 6
+
+
 void gdt_init();
+
+void gdt_switch_tss(tss_t *tss, process_t *proc);
 
 
 #endif

@@ -26,6 +26,7 @@ void stack_trace();
 
 /** Panicking macro. */
 #define panic(fmt, args...) do {                                               \
+                                asm volatile ( "cli" );                        \
                                 cprintf(VGA_COLOR_MAGENTA, "PANIC: " fmt "\n", \
                                         ##args);                               \
                                 stack_trace();                                 \

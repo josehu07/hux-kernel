@@ -82,8 +82,8 @@ Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kerne
 - [x] Keyboard input support
 - [x] Global descriptors table
 - [x] Virtual memory (paging)
-- [ ] Heal memory allocator
-- [ ] Process isolation
+- [x] Heal memory allocator
+- [x] Process isolation
 - [ ] Context switch & scheduling
 - [ ] Multi-threading concurrency
 - [ ] Synchronization primitives

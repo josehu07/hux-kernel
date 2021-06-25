@@ -4,19 +4,25 @@
 
 
 #include <stdint.h>
+#include <stddef.h>
 
 #include "gdt.h"
 
+#include "../common/debug.h"
+
+#include "../process/process.h"
+
 
 /**
- * The GDT table. We maintain 5 entries:
+ * The GDT table. We maintain 6 entries:
  *   0. a null entry;
  *   1. kernel mode code segment;
  *   2. kernel mode data segment;
  *   3. user mode code segment;
  *   4. user mode data segment;
+ *   5. task state segment for user mode execution.
  */
-static gdt_entry_t gdt[5];
+static gdt_entry_t gdt[NUM_SEGMENTS];
 
 /** GDTR address register. */
 static gdt_register_t gdtr;
@@ -80,14 +86,14 @@ gdt_init()
      *   - Sz = 1: in 32-bit protected mode
      *   Hence, 0b1100 -> 0xC for all these four segments. 
      */
-    gdt_set_entry(0, 0u, 0u, 0u, 0u);           /** 0-th entry is unused. */
-    gdt_set_entry(1, 0u, 0xFFFFF, 0x9A, 0xC0);  /** Kernel code segment. */
-    gdt_set_entry(2, 0u, 0xFFFFF, 0x92, 0xC0);  /** Kernel data segment. */
-    gdt_set_entry(3, 0u, 0xFFFFF, 0xFA, 0xC0);  /** User mode code segment. */
-    gdt_set_entry(4, 0u, 0xFFFFF, 0xF2, 0xC0);  /** User mode data segment. */
+    gdt_set_entry(SEGMENT_UNUSED, 0u, 0u, 0u, 0u);  /** 0-th entry unused. */
+    gdt_set_entry(SEGMENT_KCODE, 0u, 0xFFFFF, 0x9A, 0xC0);
+    gdt_set_entry(SEGMENT_KDATA, 0u, 0xFFFFF, 0x92, 0xC0);
+    gdt_set_entry(SEGMENT_UCODE, 0u, 0xFFFFF, 0xFA, 0xC0);
+    gdt_set_entry(SEGMENT_UDATA, 0u, 0xFFFFF, 0xF2, 0xC0);
 
     /** Setup the GDTR register value. */
-    gdtr.boundary = (sizeof(gdt_entry_t) * 5) - 1;  /** Length - 1. */
+    gdtr.boundary = (sizeof(gdt_entry_t) * NUM_SEGMENTS) - 1;
     gdtr.base     = (uint32_t) &gdt;
 
     /**
@@ -96,5 +102,47 @@ gdt_init()
      * bytes, therefore kernel data selector is at 0x10 and kernel code
      * selector is at 0x08.
      */
-    gdt_load((uint32_t) &gdtr, 0x10, 0x08);
+    gdt_load((uint32_t) &gdtr, 8 * SEGMENT_KDATA, 8 * SEGMENT_KCODE);
+}
+
+
+/**
+ * Set up TSS for a process to be switched, so that the CPU will be able
+ * to jump to its kernel stack when a system call happens.
+ * Check out https://wiki.osdev.org/Task_State_Segment for details.
+ */
+void
+gdt_switch_tss(tss_t *tss, process_t *proc)
+{
+    assert(proc != NULL);
+    assert(proc->pgdir != NULL);
+    assert(proc->kstack != 0);
+
+    /**
+     * Task state segment (TSS) has:
+     *
+     * Access Byte -
+     *   - Pr    = 1: present
+     *   - Privl = 0: kernel privilege
+     *   - S     = 0: it is a system segment
+     *   - Ex    = 1: executable
+     *   - DC    = 0: conforming
+     *   - RW    = 0: readable code
+     *   - Ac    = 1: accessed
+     *   Hence, 0x89.
+     */
+    gdt_set_entry(5, (uint32_t) tss, (uint32_t) (sizeof(tss_t) - 1),
+                  0x89, 0x00);
+
+    /** Fill in task state information. */
+    tss->ss0 = 8 * SEGMENT_KDATA;               /** Kernel data segment. */
+    tss->esp0 = proc->kstack + KSTACK_SIZE;     /** Top of kernel stack. */
+    tss->iopb = sizeof(tss_t);  /** Forbids e.g. inb/outb from user space. */
+
+    /**
+     * Load task segment register. Segment selectors need to be shifted
+     * to the left by 3, because the lower 3 bits are TI & RPL flags.
+     */
+    uint16_t tss_seg_reg = SEGMENT_TSS << 3;
+    asm volatile ( "ltr %0" : : "r" (tss_seg_reg) );
 }

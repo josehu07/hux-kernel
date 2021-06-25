@@ -11,7 +11,11 @@
 #include <stdint.h>
 
 
-void timer_init(uint16_t freq_hz);
+/** Timer interrupt frequency in Hz. */
+#define TIMER_FREQ_HZ 100
+
+
+void timer_init();
 
 
 #endif

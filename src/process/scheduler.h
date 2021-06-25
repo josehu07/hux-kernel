@@ -11,27 +11,17 @@
 
 #include "process.h"
 
+#include "../interrupt/syscall.h"
+
 
 /** Per-CPU state (we only have a single CPU). */
 struct cpu_state {
     /** No ID field because only supporting single CPU. */
     process_context_t *scheduler;   /** CPU scheduler context. */
     process_t *running_proc;        /** The process running or NULL. */
-    // ... (TODO)
+    tss_t task_state;               /** Current process task state. */
 };
 typedef struct cpu_state cpu_state_t;
-
-// Per-CPU state
-// struct cpu {
-//   uchar apicid;                // Local APIC ID
-//   struct context *scheduler;   // swtch() here to enter scheduler
-//   struct taskstate ts;         // Used by x86 to find stack for interrupt
-//   struct segdesc gdt[NSEGS];   // x86 global descriptor table
-//   volatile uint started;       // Has the CPU started?
-//   int ncli;                    // Depth of pushcli nesting.
-//   int intena;                  // Were interrupts enabled before pushcli?
-//   struct proc *proc;           // The process running on this cpu or null
-// };
 
 
 void cpu_init();

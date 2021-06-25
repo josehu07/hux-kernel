@@ -9,6 +9,8 @@
 
 #include <stdint.h>
 
+#include "../interrupt/isr.h"
+
 #include "../memory/paging.h"
 
 
@@ -53,32 +55,16 @@ struct process {
     int8_t pid;                     /** Process ID. */
     process_context_t *context;     /** Registers context. */
     process_state_t state;          /** Process state */
-    // pde_t *pgdir;                   /** Process page directory. */
+    pde_t *pgdir;                   /** Process page directory. */
     uint32_t kstack;                /** Bottom of its kernel stack. */
+    interrupt_state_t *trap_state;  /** Trap state used at creation. */
     // struct process *parent;         /** Parent process. */
     // ... (TODO)
 };
 typedef struct process process_t;
 
-// Per-process state
-// struct proc {
-//   uint sz;                     // Size of process memory (bytes)
-//   pde_t* pgdir;                // Page table
-//   char *kstack;                // Bottom of kernel stack for this process
-//   enum procstate state;        // Process state
-//   int pid;                     // Process ID
-//   struct proc *parent;         // Parent process
-//   struct trapframe *tf;        // Trap frame for current syscall
-//   struct context *context;     // swtch() here to run process
-//   void *chan;                  // If non-zero, sleeping on chan
-//   int killed;                  // If non-zero, have been killed
-//   struct file *ofile[NOFILE];  // Open files
-//   struct inode *cwd;           // Current directory
-//   char name[16];               // Process name (debugging)
-// };
 
-
-/** Expose the process table. */
+/** Extern the process table to the scheduler. */
 extern process_t ptable[];
 
 

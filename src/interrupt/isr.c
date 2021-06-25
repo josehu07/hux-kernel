@@ -6,6 +6,8 @@
 #include <stdint.h>
 
 #include "isr.h"
+#include "idt.h"
+#include "syscall.h"
 
 #include "../common/port.h"
 #include "../common/printf.h"
@@ -15,7 +17,7 @@
 
 
 /** Table of ISRs. Unregistered entries MUST be NULL. */
-isr_t isr_table[256] = {NULL};
+isr_t isr_table[NUM_GATE_ENTRIES] = {NULL};
 
 /** Exposed to other parts for them to register ISRs. */
 inline void
@@ -49,12 +51,12 @@ isr_handler(interrupt_state_t *state)
 {
     uint8_t int_no = state->int_no;
 
-    /** A trap gate interrupt, i.e., an exception. */
+    /** An exception interrupt. */
     if (int_no <= 31) {
 
         /** Panic if no actual ISR is registered. */
         if (isr_table[int_no] == NULL)
-            error("missing handler for interrupt # %#x", int_no);
+            error("missing handler for ISR interrupt # %#x", int_no);
         else
             isr_table[int_no](state);
 
@@ -63,9 +65,18 @@ isr_handler(interrupt_state_t *state)
         uint8_t irq_no = state->int_no - 32;
 
         /** Call actual ISR if registered. */
-        if (isr_table[int_no] != NULL)
+        if (isr_table[int_no] == NULL)
+            error("missing handler for IRQ interrupt # %#x", int_no);
+        else
             isr_table[int_no](state);
 
-        _pic_send_eoi(irq_no);      /** Remember to send back EOI signal. */
-    }
+        _pic_send_eoi(irq_no);      /** Send back EOI signal to PIC. */
+
+    /** Syscall trap. */
+    } else if (int_no == INT_NO_SYSCALL) {
+        panic("syscall handler not implemented yet!");
+
+    /** Unknown interrupt number. */
+    } else
+        error("caught unknown interrupt # %#x", int_no);
 }
