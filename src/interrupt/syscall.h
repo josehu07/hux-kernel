@@ -9,6 +9,8 @@
 
 #include <stdint.h>
 
+#include "isr.h"
+
 
 /** Syscall trap gate registerd at a vacant ISR number. */
 #define INT_NO_SYSCALL 64   /** == 0x40 */

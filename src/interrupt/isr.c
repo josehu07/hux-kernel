@@ -48,6 +48,8 @@ static void
 _print_interrupt_state(interrupt_state_t *state)
 {
     info("interrupt state:");
+    process_t *proc = running_proc();
+    printf("  Current process: %d - %s\n", proc->pid, proc->name);
     printf("  INT#: %d  ERR_CODE: %#010X\n",
            state->int_no, state->err_code);
     printf("  EAX: %#010X  EIP: %#010X  ESP: %#010X\n",
@@ -99,7 +101,8 @@ isr_handler(interrupt_state_t *state)
          * Call the syscall handler in `syscall.c`.
          *
          * Interrupt state contains the syscall number in EAX and the
-         * arguments on the user stack.
+         * arguments on the user stack. Returns an integer return code
+         * back to EAX.
          */
         syscall(state);
 

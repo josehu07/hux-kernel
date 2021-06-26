@@ -17,7 +17,7 @@ int32_t
 syscall_hello(void)
 {
     process_t *proc = running_proc();
-    printf("Hello, %s!\n", proc->name);
+    printf("From sysall_hello handler: Hello, %s!\n", proc->name);
 
     return 0;
 }

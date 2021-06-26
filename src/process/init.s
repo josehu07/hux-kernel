@@ -9,9 +9,8 @@
 .type start, @function
 start:
 
-    /** Trigger a page fault by accessing unmapped memory address. */
-    movl $0x00600000, %eax
-    movl $123, (%eax)
+    movl $1, %eax
+    int $0x40
 
     hlt
 
