@@ -4,7 +4,8 @@
 *.o
 *.out
 
-src/process/init
+user/init
+user/*.bin
 
 isodir/
 *.iso

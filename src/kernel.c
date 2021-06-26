@@ -107,7 +107,7 @@ kernel_main(unsigned long magic, unsigned long addr)
     info("kernel flexible heap  starts at %p", kheap_curr);
 
     /** Initialize CPu state, process structures, and the `init` process. */
-    _init_message("initializing CPU state and process structures");
+    _init_message("initializing CPU state & process structures");
     cpu_init();
     process_init();
     initproc_init();

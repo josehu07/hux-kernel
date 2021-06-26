@@ -145,7 +145,7 @@ paging_walk_pgdir(pde_t *pgdir, uint32_t vaddr, bool alloc, bool boot)
     memset(pgtab, 0, sizeof(pte_t) * PTES_PER_PAGE);
 
     pgdir[pde_idx].present = 1;
-    pgdir[pde_idx].writable = 0;
+    pgdir[pde_idx].writable = 1;
     pgdir[pde_idx].user = 1;    /** Just allow user access on all PDEs. */
     pgdir[pde_idx].frame = ADDR_PAGE_NUMBER((uint32_t) pgtab);
 
@@ -175,6 +175,11 @@ paging_destroy_pgdir(pde_t *pgdir)
 uint32_t
 paging_map_upage(pte_t *pte, bool writable)
 {
+    if (pte->present == 1) {
+        error("map_upage: page already mapped");
+        return 0;
+    }
+
     uint32_t frame_num = frame_bitmap_alloc();
 
     pte->present = 1;
@@ -204,6 +209,11 @@ paging_map_upage(pte_t *pte, bool writable)
 void
 paging_map_kpage(pte_t *pte, uint32_t paddr)
 {
+    if (pte->present == 1) {
+        error("map_kpage: page already mapped");
+        return;
+    }
+
     uint32_t frame_num = ADDR_PAGE_NUMBER(paddr);
 
     pte->present = 1;

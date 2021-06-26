@@ -96,10 +96,10 @@ void
 initproc_init(void)
 {
     /** Get the embedded binary of `init.s`. */
-    extern char _binary___src_process_init_start[];
-    extern char _binary___src_process_init_end[];
-    char *elf_curr = (char *) _binary___src_process_init_start;
-    char *elf_end  = (char *) _binary___src_process_init_end;
+    extern char _binary___user_init_start[];
+    extern char _binary___user_init_end[];
+    char *elf_curr = (char *) _binary___user_init_start;
+    char *elf_end  = (char *) _binary___user_init_end;
 
     /** Get a slot in the ptable. */
     process_t *proc = _alloc_new_process();
@@ -132,6 +132,7 @@ initproc_init(void)
         memcpy((char *) paddr, elf_curr,
             elf_curr + PAGE_SIZE > elf_end ? elf_end - elf_curr : PAGE_SIZE);
 
+        vaddr_elf += PAGE_SIZE;
         elf_curr += PAGE_SIZE;
     }
     
@@ -145,8 +146,11 @@ initproc_init(void)
     proc->trap_state->ds = (8 * SEGMENT_UDATA) | 0x3;   /** DPL_USER. */
     proc->trap_state->ss = proc->trap_state->ds;
     proc->trap_state->eflags = 0x00000200;      /** Interrupt enable. */
-    proc->trap_state->esp = USER_MAX;
+    proc->trap_state->esp = USER_MAX - 4;   /** GCC might push an FP. */
     proc->trap_state->eip = USER_BASE;   /** Beginning of ELF binary. */
+
+    proc->stack_low = vaddr_top;
+    proc->heap_high = ADDR_PAGE_ROUND_UP(vaddr_elf);
 
     /** Set process state to READY so the scheduler can pick it up. */
     proc->state = READY;

@@ -36,7 +36,7 @@
 #define ADDR_PAGE_ALIGNED(addr) (ADDR_PAGE_OFFSET(addr) == 0)
 
 #define ADDR_PAGE_ROUND_DN(addr) ((addr) & 0xFFFFF000)
-#define ADDR_PAGE_ROUND_UP(addr) (ADDR_PAGE_ROUND_DN(addr) + 0x1000)
+#define ADDR_PAGE_ROUND_UP(addr) (ADDR_PAGE_ROUND_DN((addr) + 0x00000FFF))
 
 
 /**

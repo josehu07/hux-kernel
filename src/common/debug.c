@@ -14,6 +14,8 @@
 
 #include "../common/string.h"
 
+#include "../process/layout.h"
+
 
 /** Initialized at 'debug_init'. */
 static elf_symbol_t *elf_symtab;
@@ -92,7 +94,7 @@ stack_trace()
     unsigned int id = 0;
 
     asm volatile ( "movl %%ebp, %0" : "=r" (ebp) );
-    while (ebp != NULL) {
+    while (ebp != NULL && (uint32_t) (ebp + 1) < USER_MAX) {
         uint32_t addr = *(ebp + 1);
         printf(" %2u) [%p] %s\n", id++, addr, _lookup_symbol_name(addr));
         ebp = (uint32_t *) *ebp;

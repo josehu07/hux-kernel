@@ -14,21 +14,34 @@ TARGET_SYM=hux.sym
 C_SOURCES=$(shell find ./src/ -name "*.c")
 C_OBJECTS=$(patsubst %.c, %.o, $(C_SOURCES))
 
-INITPROC_SOURCE="./src/process/init.s"
-INITPROC_OBJECT="./src/process/init.o"
-INITPROC_LINKED="./src/process/init.out"
-INITPROC_BINARY="./src/process/init"
-
-S_SOURCES=$(filter-out $(INITPROC_SOURCE), $(shell find ./src/ -name "*.s"))
+S_SOURCES=$(shell find ./src/ -name "*.s")
 S_OBJECTS=$(patsubst %.s, %.o, $(S_SOURCES))
+
+INIT_SOURCE=./user/init.c
+INIT_OBJECT=./user/init.o
+INIT_LINKED=./user/init.out
+INIT_BINARY=./user/init
+
+ULIB_C_SOURCES=$(shell find ./user/lib/ -name "*.c")
+ULIB_C_OBJECTS=$(patsubst %.c, %.o, $(ULIB_C_SOURCES))
+
+ULIB_S_SOURCES=$(shell find ./user/lib/ -name "*.s")
+ULIB_S_OBJECTS=$(patsubst %.s, %.o, $(ULIB_S_SOURCES))
+
+USER_SOURCES=$(filter-out $(INIT_SOURCE), $(shell find ./user/ -maxdepth 1 -name "*.c"))
+USER_BINARYS=$(patsubst %.c, %.bin, $(USER_SOURCES))
+
+
+ADDRSPACE_USER_BASE=0x20000000
 
 
 ASM=i686-elf-as
 ASM_FLAGS=
 
 CC=i686-elf-gcc
-C_FLAGS=-c -Wall -Wextra -ffreestanding -O2 -std=gnu99 -Wno-tautological-compare \
-        -g -fno-omit-frame-pointer -fstack-protector
+C_FLAGS_USER=-c -Wall -Wextra -ffreestanding -O2 -std=gnu99 -Wno-tautological-compare \
+			 -g -fno-omit-frame-pointer
+C_FLAGS=$(C_FLAGS_USER) -fstack-protector
 
 LD=i686-elf-gcc
 LD_FLAGS=-ffreestanding -O2 -nostdlib
@@ -43,28 +56,47 @@ HUX_MSG="[--Hux->]"
 #
 # Targets for building.
 #
-all: $(S_OBJECTS) $(C_OBJECTS) initproc link verify update symfile
+ALL_DEPS := $(S_OBJECTS) $(C_OBJECTS)
+ALL_DEPS += $(ULIB_S_OBJECTS) $(ULIB_C_OBJECTS) $(USER_BINARYS) initproc
+ALL_DEPS += link verify update symfile
+all: $(ALL_DEPS)
 
-.s.o:
-	@echo $(HUX_MSG) "Compiling assembly '$<'..."
-	$(ASM) $(ASM_FLAGS) $< -o $@
+$(S_OBJECTS): %.o: %.s
+	@echo $(HUX_MSG) "Compiling kernel assembly '$<'..."
+	$(ASM) $(ASM_FLAGS) -o $@ $<
 
-.c.o:
-	@echo $(HUX_MSG) "Compiling C code '$<'..."
-	$(CC) $(C_FLAGS) $< -o $@
+$(C_OBJECTS): %.o: %.c
+	@echo $(HUX_MSG) "Compiling kernel C code '$<'..."
+	$(CC) $(C_FLAGS) -o $@ $<
 
-# Init process goes separately, links into an independent binary.
+# User programs use more specific rules to build into independent binary.
+$(ULIB_S_OBJECTS): %.o: %.s
+	@echo $(HUX_MSG) "Compiling user lib assembly '$<'..."
+	$(ASM) $(ASM_FLAGS) -I ./user/lib/ -o $@ $<
+
+$(ULIB_C_OBJECTS): %.o: %.c
+	@echo $(HUX_MSG) "Compiling user lib C code '$<'..."
+	$(CC) $(C_FLAGS_USER) -o $@ $<
+
+$(USER_BINARYS): %.bin: %.c $(ULIB_S_OBJECTS) $(ULIB_C_OBJECTS)
+	@echo $(HUX_MSG) "Compiling & linking user program '$<'..."
+	$(CC) $(C_FLAGS_USER) -o $<.o $<
+	$(LD) $(LD_FLAGS) -N -e main -Ttext $(ADDRSPACE_USER_BASE) -o $@ \
+		$<.o $(ULIB_S_OBJECTS) $(ULIB_C_OBJECTS)
+
+# Init process goes separately, to allow later embedding into kernel image.
 initproc:
-	@echo $(HUX_MSG) "Handling 'init' process binary..."
-	$(ASM) $(ASM_FLAGS) -o $(INITPROC_OBJECT) $(INITPROC_SOURCE)
-	$(LD) $(LD_FLAGS) -N -e start -Ttext 0 -o $(INITPROC_LINKED) $(INITPROC_OBJECT)
-	$(OBJCOPY) -S -O binary $(INITPROC_LINKED) $(INITPROC_BINARY)
+	@echo $(HUX_MSG) "Compiling & linking user 'init' program..."
+	$(CC) $(C_FLAGS_USER) -o $(INIT_OBJECT) $(INIT_SOURCE)
+	$(LD) $(LD_FLAGS) -N -e main -Ttext $(ADDRSPACE_USER_BASE) -o $(INIT_LINKED) \
+		$(INIT_OBJECT) $(ULIB_S_OBJECTS) $(ULIB_C_OBJECTS)
+	$(OBJCOPY) -S -O binary $(INIT_LINKED) $(INIT_BINARY)
 
 # Remember to link 'libgcc'. Embeds the init process binary.
-link:
-	@echo $(HUX_MSG) "Linking..."
+link: $(S_OBJECTS) $(C_OBJECTS) initproc
+	@echo $(HUX_MSG) "Linking kernel image..."
 	$(LD) $(LD_FLAGS) -T scripts/kernel.ld -lgcc -o $(TARGET_BIN) -Wl,--oformat,elf32-i386 \
-		$(S_OBJECTS) $(C_OBJECTS) -Wl,-b,binary,$(INITPROC_BINARY)
+		$(S_OBJECTS) $(C_OBJECTS) -Wl,-b,binary,$(INIT_BINARY)
 
 
 #
@@ -125,5 +157,6 @@ gdb:
 #
 .PHONY: clean
 clean:
-	rm -f $(S_OBJECTS) $(C_OBJECTS) $(INITPROC_OBJECT) $(INITPROC_LINKED) \
-	      $(INITPROC_BINARY) $(TARGET_BIN) $(TARGET_ISO) $(TARGET_SYM)
+	rm -f $(S_OBJECTS) $(C_OBJECTS) $(ULIB_S_OBJECTS) $(ULIB_C_OBJECTS) \
+		$(INIT_OBJECT) $(INIT_LINKED) $(INIT_BINARY) $(USER_BINARYS) 	\
+		$(TARGET_BIN) $(TARGET_ISO) $(TARGET_SYM)

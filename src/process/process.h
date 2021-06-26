@@ -58,7 +58,9 @@ struct process {
     pde_t *pgdir;                   /** Process page directory. */
     uint32_t kstack;                /** Bottom of its kernel stack. */
     interrupt_state_t *trap_state;  /** Trap state used at creation. */
-    // struct process *parent;         /** Parent process. */
+    uint32_t stack_low;             /** Current bottom of stack pages. */
+    uint32_t heap_high;             /** Current top of heap pages. */
+    struct process *parent;         /** Parent process. */
     // ... (TODO)
 };
 typedef struct process process_t;

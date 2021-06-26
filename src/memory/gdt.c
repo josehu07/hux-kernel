@@ -138,6 +138,7 @@ gdt_switch_tss(tss_t *tss, process_t *proc)
     tss->ss0 = 8 * SEGMENT_KDATA;               /** Kernel data segment. */
     tss->esp0 = proc->kstack + KSTACK_SIZE;     /** Top of kernel stack. */
     tss->iopb = sizeof(tss_t);  /** Forbids e.g. inb/outb from user space. */
+    tss->ebp = 0;   /** Ensure EBP is 0 on switch, for stack backtracing. */
 
     /**
      * Load task segment register. Segment selectors need to be shifted
