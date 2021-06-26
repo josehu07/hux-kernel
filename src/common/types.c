@@ -1,5 +1,5 @@
 /**
- * Type identification functions.
+ * Type identification functions on characters.
  */
 
 

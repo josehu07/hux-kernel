@@ -5,7 +5,7 @@
 ![code-size](https://img.shields.io/github/languages/code-size/josehu07/hux-kernel?color=lightgrey)
 ![license](https://img.shields.io/github/license/josehu07/hux-kernel)
 
-Hux - An x86 32-bit toy operating system kernel built from scratch, following [the OSTEP book](http://pages.cs.wisc.edu/~remzi/OSTEP/) structure and terminology.
+Hux - An x86 32-bit single-CPU toy operating system kernel built from scratch, following [the OSTEP book](http://pages.cs.wisc.edu/~remzi/OSTEP/) structure and terminology.
 
 |   Author    | Kernel Src LoC (temp)  | Tutorial LoC (temp) |
 |   :---:     |         :---:          |       :---:         |
@@ -82,8 +82,9 @@ Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kerne
 - [x] Keyboard input support
 - [x] Global descriptors table
 - [x] Virtual memory (paging)
-- [x] Heal memory allocator
-- [x] Process isolation
+- [x] Heal memory allocators
+- [x] Process user mode execution
+- [ ] Essential system calls
 - [ ] Context switch & scheduling
 - [ ] Multi-threading concurrency
 - [ ] Synchronization primitives

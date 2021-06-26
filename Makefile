@@ -11,7 +11,7 @@ TARGET_ISO=hux.iso
 TARGET_SYM=hux.sym
 
 
-C_SOURCES=$(shell find . -name "*.c")
+C_SOURCES=$(shell find ./src/ -name "*.c")
 C_OBJECTS=$(patsubst %.c, %.o, $(C_SOURCES))
 
 INITPROC_SOURCE="./src/process/init.s"
@@ -19,7 +19,7 @@ INITPROC_OBJECT="./src/process/init.o"
 INITPROC_LINKED="./src/process/init.out"
 INITPROC_BINARY="./src/process/init"
 
-S_SOURCES=$(filter-out $(INITPROC_SOURCE), $(shell find . -name "*.s"))
+S_SOURCES=$(filter-out $(INITPROC_SOURCE), $(shell find ./src/ -name "*.s"))
 S_OBJECTS=$(patsubst %.s, %.o, $(S_SOURCES))
 
 

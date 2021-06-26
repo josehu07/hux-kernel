@@ -66,3 +66,11 @@ cpu_init(void)
     cpu_state.running_proc = NULL;
     memset(&(cpu_state.task_state), 0, sizeof(tss_t));
 }
+
+
+/** Get the current scheduled process. */
+inline process_t *
+running_proc(void)
+{
+    return cpu_state.running_proc;
+}

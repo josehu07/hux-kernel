@@ -28,5 +28,7 @@ void cpu_init();
 
 void scheduler();
 
+process_t *running_proc();
+
 
 #endif

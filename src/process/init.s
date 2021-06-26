@@ -10,14 +10,10 @@
 start:
 
     /** Trigger a page fault by accessing unmapped memory address. */
-    movl $0x40000000, %eax
-    movl (%eax), %ebx
+    movl $0x00600000, %eax
+    movl $123, (%eax)
 
-    /** Infinite halt loop trick. */
-    cli
-halt:
     hlt
-    jmp halt
 
 
 /**

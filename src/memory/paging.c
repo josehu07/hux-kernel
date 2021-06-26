@@ -146,7 +146,7 @@ paging_walk_pgdir(pde_t *pgdir, uint32_t vaddr, bool alloc, bool boot)
 
     pgdir[pde_idx].present = 1;
     pgdir[pde_idx].writable = 0;
-    pgdir[pde_idx].user = 0;
+    pgdir[pde_idx].user = 1;    /** Just allow user access on all PDEs. */
     pgdir[pde_idx].frame = ADDR_PAGE_NUMBER((uint32_t) pgtab);
 
     return &pgtab[pte_idx];

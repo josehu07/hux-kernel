@@ -56,6 +56,13 @@ void stack_trace();
                             } while (0)
 
 
+/** Warning prompting macro. */
+#define warn(fmt, args...)  do {                                               \
+                                 cprintf(VGA_COLOR_MAGENTA, "WARN: " fmt "\n", \
+                                         ##args);                              \
+                            } while (0)
+
+
 /** Info prompting macro. */
 #define info(fmt, args...)  do {                                            \
                                  cprintf(VGA_COLOR_CYAN, "INFO: " fmt "\n", \

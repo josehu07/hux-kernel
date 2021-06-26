@@ -15,6 +15,10 @@
 
 #include "../display/vga.h"
 
+#include "../interrupt/syscall.h"
+
+#include "../process/scheduler.h"
+
 
 /** Table of ISRs. Unregistered entries MUST be NULL. */
 isr_t isr_table[NUM_GATE_ENTRIES] = {NULL};
@@ -39,6 +43,20 @@ _pic_send_eoi(uint8_t irq_no)
 }
 
 
+/** Print interrupt state information. */
+static void
+_print_interrupt_state(interrupt_state_t *state)
+{
+    info("interrupt state:");
+    printf("  INT#: %d  ERR_CODE: %#010X\n",
+           state->int_no, state->err_code);
+    printf("  EAX: %#010X  EIP: %#010X  ESP: %#010X\n",
+           state->eax, state->eip, state->esp);
+    printf("   DS: %#010X   CS: %#010X   SS: %#010X\n",
+           state->ds, state->cs, state->ss);
+    printf("  EFLAGS: %#010X\n", state->eflags);
+}
+
 /**
  * ISR handler written in C.
  *
@@ -55,9 +73,10 @@ isr_handler(interrupt_state_t *state)
     if (int_no <= 31) {
 
         /** Panic if no actual ISR is registered. */
-        if (isr_table[int_no] == NULL)
-            error("missing handler for ISR interrupt # %#x", int_no);
-        else
+        if (isr_table[int_no] == NULL) {
+            _print_interrupt_state(state);
+            error("missing handler for exception interrupt # %#x", int_no);
+        } else
             isr_table[int_no](state);
 
     /** An IRQ-translated interrupt from external device. */
@@ -65,18 +84,28 @@ isr_handler(interrupt_state_t *state)
         uint8_t irq_no = state->int_no - 32;
 
         /** Call actual ISR if registered. */
-        if (isr_table[int_no] == NULL)
-            error("missing handler for IRQ interrupt # %#x", int_no);
-        else
+        if (isr_table[int_no] == NULL) {
+            _print_interrupt_state(state);
+            error("missing handler for device IRQ interrupt # %#x", int_no);
+        } else
             isr_table[int_no](state);
 
         _pic_send_eoi(irq_no);      /** Send back EOI signal to PIC. */
 
     /** Syscall trap. */
     } else if (int_no == INT_NO_SYSCALL) {
-        panic("syscall handler not implemented yet!");
+
+        /**
+         * Call the syscall handler in `syscall.c`.
+         *
+         * Interrupt state contains the syscall number in EAX and the
+         * arguments on the user stack.
+         */
+        syscall(state);
 
     /** Unknown interrupt number. */
-    } else
+    } else {
+        _print_interrupt_state(state);
         error("caught unknown interrupt # %#x", int_no);
+    }
 }

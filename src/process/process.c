@@ -127,7 +127,7 @@ initproc_init(void)
     while (elf_curr < elf_end) {
         pte_t *pte = paging_walk_pgdir(proc->pgdir, vaddr_elf, true, false);
         uint32_t paddr = paging_map_upage(pte, true);
-        
+
         /** Copy ELF content in. */
         memcpy((char *) paddr, elf_curr,
             elf_curr + PAGE_SIZE > elf_end ? elf_end - elf_curr : PAGE_SIZE);

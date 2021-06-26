@@ -56,8 +56,21 @@ struct task_state_segment {
     uint8_t  pad10;
     uint8_t  pad11;
     uint8_t  iopb;       /** I/O map base address. */
-};
+} __attribute__((packed));
 typedef struct task_state_segment tss_t;
+
+
+/** Individual syscall handler type: void -> int32_t. */
+typedef int32_t (*syscall_t)(void);
+
+/** Syscall unsuccessful return code. */
+#define SYS_FAIL_RC (-1)
+
+void syscall(interrupt_state_t *state);
+
+
+/** List of known syscall numbers. */
+#define SYSCALL_HELLO 1
 
 
 #endif
