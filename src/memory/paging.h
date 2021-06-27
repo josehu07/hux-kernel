@@ -98,6 +98,8 @@ void paging_destroy_pgdir(pde_t *pgdir);
 uint32_t paging_map_upage(pte_t *pte, bool writable);
 void paging_map_kpage(pte_t *pte, uint32_t paddr);
 void paging_unmap_range(pde_t *pgdir, uint32_t va_start, uint32_t va_end);
+bool paging_copy_range(pde_t *dstdir, pde_t *srcdir, uint32_t va_start,
+                                                     uint32_t va_end);
 
 void paging_switch_pgdir(pde_t *pgdir);
 

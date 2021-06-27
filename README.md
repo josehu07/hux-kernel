@@ -29,8 +29,13 @@ With QEMU (recommended), download the CDROM image `hux.iso` and do:
 
 ```bash
 $ qemu-system-i386 -cdrom hux.iso
+```
 
-# Or, if you clone the repo and build Hux yourself:
+(This `hux.iso` image has bot been uploaded yet. The first release of Hux is coming soon.)
+
+Or, if you clone the repo and build Hux yourself:
+
+```bash
 $ make
 $ make qemu
 ```
@@ -49,7 +54,7 @@ Goals of the Hux kernel include:
 1. **Understandability**: as stated above
 2. **Minimalism**: a minimal workable core design
 3. **Code clarity**: though monolithic kernel, I will try to keep the code structure modularized
-4. **Experimentalism**: not mimicking existing UNIX flavor, not targeting at practical use
+4. **Experimentalism**: not strictly following UNIX flavor, not targeting at practical use
 
 I choose to write it in *C* language with `i386-IA32` architecture, since beginners tend to be more comfortable with this combination. More up-to-date system programming languages like *Rust* are great choices for modern 64-bit OS dev (Philipp is making his Rust OS kernel [here](https://os.phil-opp.com/)), but I will start with easier settings for now to maintain better understandability. Rust itself is still "niche" (maybe not?) and you have to incorporate some of its "dark magics" to succeed in OS dev. It definitely confuses new learners.
 

@@ -20,7 +20,12 @@
 
 /** Array of individual handlers: void -> int32_t functions. */
 static syscall_t syscall_handlers[] = {
-    [SYSCALL_HELLO]     syscall_hello
+    [SYSCALL_GETPID]    syscall_getpid,
+    [SYSCALL_FORK]      syscall_fork,
+    [SYSCALL_EXIT]      syscall_exit,
+    [SYSCALL_SLEEP]     syscall_sleep,
+    [SYSCALL_WAIT]      syscall_wait,
+    [SYSCALL_KILL]      syscall_kill
 };
 
 #define NUM_SYSCALLS ((int32_t) (sizeof(syscall_handlers) / sizeof(syscall_t)))

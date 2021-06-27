@@ -30,5 +30,7 @@ void scheduler();
 
 process_t *running_proc();
 
+void yield_to_scheduler(void);
+
 
 #endif

@@ -44,13 +44,13 @@ _print_free_list_state(void)
 
 /**
  * Allocate a piece of heap memory (an object) of given size. Adopts
- * the "next-fit" allocation policy.
+ * the "next-fit" allocation policy. Returns 0 on failure.
  */
 uint32_t
 kalloc(size_t size)
 {
     if (free_list_length == 0) {
-        error("kalloc failed: kernel heap memory all used up");
+        warn("kalloc: kernel flexible heap all used up");
         return 0;
     }
 
@@ -123,7 +123,7 @@ kalloc(size_t size)
     } while (header_curr != header_begin);
 
     /** No free chunk is large enough, time to panic. */
-    error("kalloc failed: no free chunk large enough for size %d\n", size);
+    warn("kalloc: no free chunk large enough for size %d\n", size);
     return 0;
 }
 
@@ -138,12 +138,12 @@ kfree(void *addr)
     fl_header_t *header = (fl_header_t *) OBJECT_TO_HEADER((uint32_t) addr);
 
     if ((uint32_t) addr < kheap_btm || (uint32_t) addr >= kheap_top) {
-        error("kfree failed: object %p is out of heap range", addr);
+        error("kfree: object %p is out of heap range", addr);
         return;
     }
 
     if (header->magic != KHEAP_MAGIC) {
-        error("kfree failed: object %p corrupted its header magic", addr);
+        error("kfree: object %p corrupted its header magic", addr);
         return;
     }
 

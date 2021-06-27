@@ -13,6 +13,8 @@
 #include "../common/string.h"
 #include "../common/debug.h"
 
+#include "../device/timer.h"
+
 #include "../memory/gdt.h"
 #include "../memory/paging.h"
 
@@ -38,7 +40,8 @@ scheduler(void)
             if (proc->state != READY)
                 continue;
 
-            info("scheduler: going to context switch to '%s'", proc->name);
+            info("scheduler: going to context switch to %d - '%s'",
+                 proc->pid, proc->name);
 
             /** Set up TSS for this process, and switch page directory. */
             gdt_switch_tss(&(cpu_state.task_state), proc);
@@ -58,6 +61,34 @@ scheduler(void)
 }
 
 
+/** Get the current scheduled process. */
+inline process_t *
+running_proc(void)
+{
+    return cpu_state.running_proc;
+}
+
+
+/** Check if interrupt is enabled. */
+static inline bool
+_interrupt_enabled(void)
+{
+    uint32_t eflags;
+    asm volatile ( "pushfl; popl %0" : "=r" (eflags) : );
+    return eflags & 0x0200;     /** IF flag. */
+}
+
+/** Return back to the scheduler context. */
+void
+yield_to_scheduler(void)
+{
+    process_t *proc = running_proc();
+    assert(proc->state != RUNNING);
+    // assert(!_interrupt_enabled());
+    context_switch(&(proc->context), cpu_state.scheduler);
+}
+
+
 /** Initialize CPU state. */
 void
 cpu_init(void)
@@ -65,12 +96,4 @@ cpu_init(void)
     cpu_state.scheduler = NULL;     /** Will be set at context switch. */
     cpu_state.running_proc = NULL;
     memset(&(cpu_state.task_state), 0, sizeof(tss_t));
-}
-
-
-/** Get the current scheduled process. */
-inline process_t *
-running_proc(void)
-{
-    return cpu_state.running_proc;
 }

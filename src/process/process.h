@@ -43,7 +43,8 @@ enum process_state {
     INITIAL,
     READY,
     RUNNING,
-    BLOCKED,
+    BLOCKED_ON_SLEEP,
+    BLOCKED_ON_WAIT,
     TERMINATED
 };
 typedef enum process_state process_state_t;
@@ -57,10 +58,12 @@ struct process {
     process_state_t state;          /** Process state */
     pde_t *pgdir;                   /** Process page directory. */
     uint32_t kstack;                /** Bottom of its kernel stack. */
-    interrupt_state_t *trap_state;  /** Trap state used at creation. */
+    interrupt_state_t *trap_state;  /** Trap state of latest trap. */
     uint32_t stack_low;             /** Current bottom of stack pages. */
     uint32_t heap_high;             /** Current top of heap pages. */
     struct process *parent;         /** Parent process. */
+    uint32_t target_tick;           /** Target wake up timer tick. */
+    bool killed;                    /** True if should exit. */
     // ... (TODO)
 };
 typedef struct process process_t;
@@ -68,10 +71,21 @@ typedef struct process process_t;
 
 /** Extern the process table to the scheduler. */
 extern process_t ptable[];
+extern process_t *initproc;
 
 
 void process_init();
 void initproc_init();
+
+int8_t process_fork();
+
+void process_exit();
+
+void process_sleep(uint32_t sleep_ticks);
+
+int8_t process_wait();
+
+int8_t process_kill(int8_t pid);
 
 
 #endif

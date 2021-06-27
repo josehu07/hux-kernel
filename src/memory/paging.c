@@ -44,7 +44,7 @@ _kalloc_temp(size_t size, bool page_align)
 
     /** If exceeds the 8MiB kernel memory boundary, panic. */
     if (kheap_curr + size > KMEM_MAX)
-        error("kernel memory exceeds boundary");
+        error("_kalloc_temp: kernel memory exceeds boundary");
 
     uint32_t temp = kheap_curr;
     kheap_curr += size;
@@ -107,10 +107,34 @@ frame_bitmap_alloc(void)
         }
     }
 
-    error("failed to find a free frame");
     return NUM_FRAMES;
 }
 
+
+/**
+ * Helper that allocates a level-2 table. Returns NULL if running out of
+ * kernel heap.
+ */
+static pte_t *
+paging_alloc_pgtab(pde_t *pde, bool boot)
+{
+    pte_t *pgtab = NULL;
+    if (boot)
+        pgtab = (pte_t *) _kalloc_temp(sizeof(pte_t) * PTES_PER_PAGE, true);
+    else
+        pgtab = (pte_t *) salloc_page();
+    if (pgtab == NULL)
+        return NULL;
+
+    memset(pgtab, 0, sizeof(pte_t) * PTES_PER_PAGE);
+
+    pde->present = 1;
+    pde->writable = 1;
+    pde->user = 1;      /** Just allow user access on all PDEs. */
+    pde->frame = ADDR_PAGE_NUMBER((uint32_t) pgtab);
+
+    return pgtab;
+}
 
 /**
  * Walk a 2-level page table for a virtual address to locate its PTE.
@@ -136,18 +160,11 @@ paging_walk_pgdir(pde_t *pgdir, uint32_t vaddr, bool alloc, bool boot)
     if (!alloc)
         return NULL;
 
-    pte_t *pgtab = NULL;
-    if (boot)
-        pgtab = (pte_t *) _kalloc_temp(sizeof(pte_t) * PTES_PER_PAGE, true);
-    else
-        pgtab = (pte_t *) salloc_page();
-    assert(pgtab != NULL);
-    memset(pgtab, 0, sizeof(pte_t) * PTES_PER_PAGE);
-
-    pgdir[pde_idx].present = 1;
-    pgdir[pde_idx].writable = 1;
-    pgdir[pde_idx].user = 1;    /** Just allow user access on all PDEs. */
-    pgdir[pde_idx].frame = ADDR_PAGE_NUMBER((uint32_t) pgtab);
+    pte_t *pgtab = paging_alloc_pgtab(&pgdir[pde_idx], boot);
+    if (pgtab == NULL) {
+        warn("walk_pgdir: cannot alloc pgtab, out of kheap memory?");
+        return NULL;
+    }
 
     return &pgtab[pte_idx];
 }
@@ -170,39 +187,27 @@ paging_destroy_pgdir(pde_t *pgdir)
 
 /**
  * Find a free frame and map a user page (given by a pointer to its PTE)
- * into physical memory. Returns the physical address allocated.
+ * into physical memory. Returns the physical address allocated, or 0 if
+ * memory allocation failed.
  */
 uint32_t
 paging_map_upage(pte_t *pte, bool writable)
 {
     if (pte->present == 1) {
-        error("map_upage: page already mapped");
+        error("map_upage: page re-mapping detected");
         return 0;
     }
 
     uint32_t frame_num = frame_bitmap_alloc();
+    if (frame_num == NUM_FRAMES)
+        return 0;
 
     pte->present = 1;
     pte->writable = writable ? 1 : 0;
     pte->user = 1;
     pte->frame = frame_num;
 
-    uint32_t paddr = ENTRY_FRAME_ADDR((*pte));
-
-    /**
-     * Identity-map the physical address into kernel page table, if
-     * haven't done so for this physical address. This is kind of like
-     * a "lazy" identity-paging on the kernel side.
-     */
-    pte_t *kpte = paging_walk_pgdir(kernel_pgdir, paddr, true, false);
-    if (kpte->present != 1) {
-        kpte->present = 1;
-        kpte->writable = 0;     /** Has no affect. */
-        kpte->user = 0;
-        kpte->frame = frame_num;
-    }
-
-    return paddr;
+    return ENTRY_FRAME_ADDR((*pte));
 }
 
 /** Map a lower-half kernel page to the user PTE. */
@@ -210,7 +215,7 @@ void
 paging_map_kpage(pte_t *pte, uint32_t paddr)
 {
     if (pte->present == 1) {
-        error("map_kpage: page already mapped");
+        error("map_kpage: page re-mapping detected");
         return;
     }
 
@@ -237,7 +242,8 @@ paging_unmap_range(pde_t *pgdir, uint32_t va_start, uint32_t va_end)
 
     pte_t *pgtab = (pte_t *) ENTRY_FRAME_ADDR(pgdir[pde_idx]);
 
-    while (pde_idx <= pde_end && pte_idx < pte_end) {
+    while (pde_idx < pde_end
+           || (pde_idx == pde_end && pte_idx < pte_end)) {
         /**
          * If end of current level-2 table, or current level-2 table not
          * allocated, go to the next PDE.
@@ -258,6 +264,68 @@ paging_unmap_range(pde_t *pgdir, uint32_t va_start, uint32_t va_end)
 
         pte_idx++;
     }
+}
+
+/**
+ * Copy all the mapped page within a virtual address range from a page
+ * directory to another process's page directory, allocating frames for
+ * the new process on the way. Returns false if memory allocation failed.
+ */
+bool
+paging_copy_range(pde_t *dstdir, pde_t *srcdir, uint32_t va_start, uint32_t va_end)
+{
+    size_t pde_idx = ADDR_PDE_INDEX(va_start);
+    size_t pte_idx = ADDR_PTE_INDEX(va_start);
+
+    size_t pde_end = ADDR_PDE_INDEX(ADDR_PAGE_ROUND_UP(va_end));
+    size_t pte_end = ADDR_PTE_INDEX(ADDR_PAGE_ROUND_UP(va_end));
+
+    pte_t *srctab = (pte_t *) ENTRY_FRAME_ADDR(srcdir[pde_idx]);
+    pte_t *dsttab;
+
+    while (pde_idx < pde_end
+           || (pde_idx == pde_end && pte_idx < pte_end)) {
+        /**
+         * If end of current level-2 table, or current level-2 table not
+         * allocated, go to the next PDE.
+         */
+        if (pte_idx >= PTES_PER_PAGE || srcdir[pde_idx].present == 0) {
+            pde_idx++;
+            pte_idx = 0;
+            srctab = (pte_t *) ENTRY_FRAME_ADDR(srcdir[pde_idx]);
+            continue;
+        }
+
+        /**
+         * If new page directory does not have this level-2 table yet,
+         * allocate one for it on kernel heap.
+         */
+        if (dstdir[pde_idx].present == 0) {
+            dsttab = paging_alloc_pgtab(&dstdir[pde_idx], false);
+            if (dsttab == NULL) {
+                warn("copy_range: cannot alloc pgtab, out of kheap memory?");
+                return false;
+            }
+        }
+        dsttab = (pte_t *) ENTRY_FRAME_ADDR(dstdir[pde_idx]);
+
+        /** Map destination frame, and copy source frame content. */
+        if (srctab[pte_idx].present == 1) {
+            uint32_t paddr = paging_map_upage(&dsttab[pte_idx],
+                                              srctab[pte_idx].writable);
+            if (paddr == 0) {
+                warn("copy_range: cannot map page, out of physical memory?");
+                return false;
+            }
+
+            memcpy((char *) paddr, (char *) ENTRY_FRAME_ADDR(srctab[pte_idx]),
+                   PAGE_SIZE);
+        }
+
+        pte_idx++;
+    }
+
+    return true;
 }
 
 
@@ -330,17 +398,38 @@ paging_init(void)
      * memory. This means we need to map all the allowed kernel physical
      * frames (from 0 -> KMEM_MAX) as its identity virtual address in
      * the kernel page table, and reserve this entire physical memory region.
+     *
+     * Assuems that `frame_bitmap_alloc()` behaves sequentially.
      */
     uint32_t addr = 0;
     while (addr < KMEM_MAX) {
         uint32_t frame_num = frame_bitmap_alloc();
+        assert(frame_num < NUM_FRAMES);
         pte_t *pte = paging_walk_pgdir(kernel_pgdir, addr, true, true);
+        assert(pte != NULL);
 
         /** Update the bits in this PTE. */
         pte->present = 1;
         pte->writable = 0;      /** Has no affect. */
         pte->user = 0;
         pte->frame = frame_num;
+
+        addr += PAGE_SIZE;
+    }
+
+    /**
+     * Also map the rest of physical memory into the scheduler page table,
+     * so it could access any physical address directly.
+     */
+    while (addr < PHYS_MAX) {
+        pte_t *pte = paging_walk_pgdir(kernel_pgdir, addr, true, true);
+        assert(pte != NULL);
+
+        /** Update the bits in this PTE. */
+        pte->present = 1;
+        pte->writable = 0;      /** Has no affect. */
+        pte->user = 0;
+        pte->frame = ADDR_PAGE_NUMBER(addr);
 
         addr += PAGE_SIZE;
     }

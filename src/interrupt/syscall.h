@@ -18,7 +18,12 @@
 #define INT_NO_SYSCALL 64   /** == 0x40 */
 
 /** List of known syscall numbers. */
-#define SYSCALL_HELLO 1
+#define SYSCALL_GETPID  1
+#define SYSCALL_FORK    2
+#define SYSCALL_EXIT    3
+#define SYSCALL_SLEEP   4
+#define SYSCALL_WAIT    5
+#define SYSCALL_KILL    6
 
 
 /**

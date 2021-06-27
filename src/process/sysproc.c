@@ -9,31 +9,68 @@
 
 #include "../common/printf.h"
 
+#include "../device/timer.h"
+
 #include "../process/process.h"
 #include "../process/scheduler.h"
 
 
-/** int32_t hello(int32_t num, char *mem, int32_t len, char *str); */
+/** int8_t getpid(void); */
 int32_t
-syscall_hello(void)
+syscall_getpid(void)
 {
-    int32_t num, len;
-    char *mem, *str;
+    return running_proc()->pid;
+}
 
-    if (!sysarg_get_int(0, &num))
+/** int8_t fork(void); */
+int32_t
+syscall_fork(void)
+{
+    return process_fork();
+}
+
+/** void exit(void); */
+int32_t
+syscall_exit(void)
+{
+    process_exit();
+    return 0;   /** Not reached. */
+}
+
+/** int8_t sleep(int32_t millisecs); */
+int32_t
+syscall_sleep(void)
+{
+    int32_t millisecs;
+    
+    if (!sysarg_get_int(0, &millisecs))
         return SYS_FAIL_RC;
-    if (!sysarg_get_int(2, &len))
-        return SYS_FAIL_RC;
-    if (len <= 0)
-        return SYS_FAIL_RC;
-    if (!sysarg_get_mem(1, &mem, len))
-        return SYS_FAIL_RC;
-    if (sysarg_get_str(3, &str) < 0)
+    if (millisecs < 0)
         return SYS_FAIL_RC;
 
-    process_t *proc = running_proc();
-    printf("From sysall_hello handler: Hello, %s!\n", proc->name);
-    printf("  num: %d, mem[0]: %c, str: %s\n", num, mem[0], str);
+    uint32_t sleep_ticks = millisecs * TIMER_FREQ_HZ / 1000;
+    process_sleep(sleep_ticks);
 
     return 0;
+}
+
+/** int8_t wait(void); */
+int32_t
+syscall_wait(void)
+{
+    return process_wait();
+}
+
+/** int8_t kill(int8_t pid); */
+int32_t
+syscall_kill(void)
+{
+    int32_t pid;
+
+    if (!sysarg_get_int(0, &pid))
+        return SYS_FAIL_RC;
+    if (pid < 0)
+        return SYS_FAIL_RC;
+
+    return process_kill(pid);
 }

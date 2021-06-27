@@ -27,8 +27,10 @@ isr_t isr_table[NUM_GATE_ENTRIES] = {NULL};
 inline void
 isr_register(uint8_t int_no, isr_t handler)
 {
-    if (isr_table[int_no] != NULL)
-        error("handler for interrupt # %#x already registered", int_no);
+    if (isr_table[int_no] != NULL) {
+        error("isr: handler for interrupt # %#x already registered", int_no);
+        return;
+    }
     isr_table[int_no] = handler;
 }
 
@@ -50,13 +52,32 @@ _print_interrupt_state(interrupt_state_t *state)
     info("interrupt state:");
     process_t *proc = running_proc();
     printf("  Current process: %d - %s\n", proc->pid, proc->name);
-    printf("  INT#: %d  ERR_CODE: %#010X\n",
-           state->int_no, state->err_code);
+    printf("  INT#: %d  ERRCODE: %#010X  EFLAGS: %#010X\n",
+           state->int_no, state->err_code, state->eflags);
     printf("  EAX: %#010X  EIP: %#010X  ESP: %#010X\n",
            state->eax, state->eip, state->esp);
     printf("   DS: %#010X   CS: %#010X   SS: %#010X\n",
            state->ds, state->cs, state->ss);
-    printf("  EFLAGS: %#010X\n", state->eflags);
+}
+
+/**
+ * Decide what to do on a missing handler:
+ *   - In kernel context: we have done something wrong, panic
+ *   - In user process context: user process misbehaved, exit it
+ */
+static void
+_missing_handler(interrupt_state_t *state)
+{
+    _print_interrupt_state(state);
+    process_t *proc = running_proc();
+
+    bool kernel_context = (state->cs & 0x3) == 0    /** DPL field is zero. */
+                          || proc == NULL;
+
+    if (kernel_context)
+        error("isr: missing handler for interrupt # %#x", state->int_no);
+    else
+        process_exit();
 }
 
 /**
@@ -75,10 +96,9 @@ isr_handler(interrupt_state_t *state)
     if (int_no <= 31) {
 
         /** Panic if no actual ISR is registered. */
-        if (isr_table[int_no] == NULL) {
-            _print_interrupt_state(state);
-            error("missing handler for exception interrupt # %#x", int_no);
-        } else
+        if (isr_table[int_no] == NULL)
+            _missing_handler(state);
+        else
             isr_table[int_no](state);
 
     /** An IRQ-translated interrupt from external device. */
@@ -86,16 +106,22 @@ isr_handler(interrupt_state_t *state)
         uint8_t irq_no = state->int_no - 32;
 
         /** Call actual ISR if registered. */
-        if (isr_table[int_no] == NULL) {
-            _print_interrupt_state(state);
-            error("missing handler for device IRQ interrupt # %#x", int_no);
-        } else
+        if (isr_table[int_no] == NULL)
+            _missing_handler(state);
+        else
             isr_table[int_no](state);
 
         _pic_send_eoi(irq_no);      /** Send back EOI signal to PIC. */
 
     /** Syscall trap. */
     } else if (int_no == INT_NO_SYSCALL) {
+        process_t *proc = running_proc();
+
+        if (proc->killed)
+            process_exit();
+
+        /** Point proc->trap_state to this trap. */
+        proc->trap_state = state;
 
         /**
          * Call the syscall handler in `syscall.c`.
@@ -106,9 +132,10 @@ isr_handler(interrupt_state_t *state)
          */
         syscall(state);
 
+        if (proc->killed)
+            process_exit();
+
     /** Unknown interrupt number. */
-    } else {
-        _print_interrupt_state(state);
-        error("caught unknown interrupt # %#x", int_no);
-    }
+    } else
+        _missing_handler(state);
 }

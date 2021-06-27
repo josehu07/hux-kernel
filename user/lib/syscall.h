@@ -7,4 +7,9 @@
 
 
 /** Externed from ASM `syscall.s`. */
-extern int32_t hello(int32_t num, char *mem, int32_t len, char *str);
+extern int8_t getpid();
+extern int8_t fork();
+extern void exit(void);
+extern int8_t sleep(int32_t millisecs);
+extern int8_t wait(void);
+extern int8_t kill(int8_t pid);

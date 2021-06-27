@@ -24,13 +24,13 @@ static slab_node_t *page_slab_freelist;
  * Internal generic SLAB allocator. Give it a pointer to the pointer to
  * the first node of any initialized fixed-granularity free-list.
  *
- * There is no data integrity checks on magics.
+ * There is no data integrity checks on magics. Returns 0 on failures.
  */
 static uint32_t
 _salloc_internal(slab_node_t **freelist)
 {
     if (freelist == NULL) {
-        error("salloc failed: given free-list is NULL");
+        warn("salloc: given free-list pointer is NULL");
         return 0;
     }
 
@@ -38,7 +38,7 @@ _salloc_internal(slab_node_t **freelist)
 
     /** No slab is free, time to panic. */
     if (node == NULL) {
-        error("salloc failed: there is no free slab");
+        warn("salloc: free-list %p has no free slabs", freelist);
         return 0;
     }
 
@@ -73,12 +73,12 @@ void
 sfree_page(void *addr)
 {
     if ((uint32_t) addr < page_slab_btm || (uint32_t) addr >= page_slab_top) {
-        error("sfree failed: object %p is out of page slab range", addr);
+        warn("sfree_page: object %p is out of page slab range", addr);
         return;
     }
 
     if ((uint32_t) addr % PAGE_SIZE != 0) {
-        error("sfree failed: object %p is not page-aligned", addr);
+        warn("sfree_page: object %p is not page-aligned", addr);
         return;
     }
 

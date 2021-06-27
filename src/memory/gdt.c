@@ -102,7 +102,7 @@ gdt_init()
      * bytes, therefore kernel data selector is at 0x10 and kernel code
      * selector is at 0x08.
      */
-    gdt_load((uint32_t) &gdtr, 8 * SEGMENT_KDATA, 8 * SEGMENT_KCODE);
+    gdt_load((uint32_t) &gdtr, SEGMENT_KDATA << 3, SEGMENT_KCODE << 3);
 }
 
 
@@ -135,7 +135,7 @@ gdt_switch_tss(tss_t *tss, process_t *proc)
                   0x89, 0x00);
 
     /** Fill in task state information. */
-    tss->ss0 = 8 * SEGMENT_KDATA;               /** Kernel data segment. */
+    tss->ss0 = SEGMENT_KDATA << 3;              /** Kernel data segment. */
     tss->esp0 = proc->kstack + KSTACK_SIZE;     /** Top of kernel stack. */
     tss->iopb = sizeof(tss_t);  /** Forbids e.g. inb/outb from user space. */
     tss->ebp = 0;   /** Ensure EBP is 0 on switch, for stack backtracing. */

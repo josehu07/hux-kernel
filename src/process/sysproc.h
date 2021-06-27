@@ -10,7 +10,12 @@
 #include <stdint.h>
 
 
-int32_t syscall_hello(void);
+int32_t syscall_getpid();
+int32_t syscall_fork();
+int32_t syscall_exit();
+int32_t syscall_sleep();
+int32_t syscall_wait();
+int32_t syscall_kill();
 
 
 #endif
