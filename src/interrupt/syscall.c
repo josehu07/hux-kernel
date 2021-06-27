@@ -10,6 +10,8 @@
 
 #include "../common/debug.h"
 
+#include "../display/sysdisp.h"
+
 #include "../interrupt/isr.h"
 
 #include "../process/layout.h"
@@ -25,7 +27,8 @@ static syscall_t syscall_handlers[] = {
     [SYSCALL_EXIT]      syscall_exit,
     [SYSCALL_SLEEP]     syscall_sleep,
     [SYSCALL_WAIT]      syscall_wait,
-    [SYSCALL_KILL]      syscall_kill
+    [SYSCALL_KILL]      syscall_kill,
+    [SYSCALL_TPRINT]    syscall_tprint
 };
 
 #define NUM_SYSCALLS ((int32_t) (sizeof(syscall_handlers) / sizeof(syscall_t)))

@@ -42,6 +42,10 @@ $ make qemu
 
 You will see the QEMU GUI popping up with GRUB loaded. Choose the "`Hux`" option with <kbd>Enter</kbd> to boot into Hux.
 
+A random screenshot of the system at current progress:
+
+<p align=center> <img src="README-demo.gif" width=720px align=center /> </p>
+
 For development setup & instructions, please check out the wiki pages (recommended). I have every single detail documented there.
 
 
@@ -90,7 +94,7 @@ Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kerne
 - [x] Heal memory allocators
 - [x] Process user mode execution
 - [ ] Essential system calls
-- [ ] Context switch & scheduling
+- [ ] Time-sharing scheduler
 - [ ] Multi-threading concurrency
 - [ ] Synchronization primitives
 - [ ] Basic IDE disk driver

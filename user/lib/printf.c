@@ -1,8 +1,10 @@
 /**
- * Common formatted printing utilities.
+ * Formatted printing user library.
  *
  * Format specifier := %[special][width][.precision][length]<type>. Only
  * limited features are provided (documented in the wiki page).
+ *
+ * The final string CANNOT exceed 1024 bytes for every single invocation.
  */
 
 
@@ -11,10 +13,9 @@
 #include <float.h>      /** For DBL_MAX. */
 
 #include "printf.h"
+#include "syscall.h"
 #include "types.h"
 #include "string.h"
-
-#include "../display/terminal.h"
 
 
 /** Internal format specifier flags. */
@@ -31,8 +32,13 @@
 #define FLAG_UPPERCASE (1 << 10)
 
 
+/** Final output aggregation buffer. */
+#define OUTPUT_BUF_SIZE 1024
+static char output_buf[OUTPUT_BUF_SIZE];
+
+
 /** Internal num -> string conversion buffer size. 64 is normally enough. */
-#define INTERNAL_BUF_SIZE 64
+#define INTERNAL_BUF_SIZE 65
 
 
 /** When not specified, a float prints 6 digits after the decimal point. */
@@ -278,267 +284,6 @@ _ftos(char *buf, double val, bool negative,
     return _reverse_and_pad(buf, len, width, flags);
 }
 
-
-/**
- * Main part of the formatted printing implementation to terminal.
- */
-static void
-_vprintf(vga_color_t fg, const char *fmt, va_list va)
-{
-    /**
-     * A segment is a subarray between formatted specifiers that should be
-     * output without modifications.
-     * Pointer comparision & subtraction should work correctly.
-     */
-    const char *seg_start = fmt;
-    const char *seg_end   = fmt;
-
-    while (true) {
-
-        /**
-         * String end. Write the buffered segment (if there is one), then end
-         * the loop.
-         */
-        if (*fmt == '\0') {
-            if (seg_end > seg_start) {
-                terminal_write_color(seg_start,
-                                     (size_t) (seg_end - seg_start), fg);
-            }
-            break;
-        }
-
-        /**
-         * Format specifier. Write the buffered segment (if there is one),
-         * then start processing the format specifier.
-         */
-        if (*fmt == '%') {
-            if (seg_end > seg_start) {
-                terminal_write_color(seg_start,
-                                     (size_t) (seg_end - seg_start), fg);
-            }
-            seg_start = fmt;
-            seg_end   = fmt;
-
-            fmt++;
-            unsigned int flags = 0;
-
-            /** Evaluate special flags. */
-            bool more_flags = true;
-            do {
-                switch (*fmt) {
-                case '0': flags |= FLAG_ZEROPAD;   fmt++; break;
-                case '-': flags |= FLAG_LEFTALIGN; fmt++; break;
-                case '+': flags |= FLAG_PLUSSIGN;  fmt++; break;
-                case ' ': flags |= FLAG_SPACESIGN; fmt++; break;
-                case '#': flags |= FLAG_PREFIX;    fmt++; break;
-                default:  more_flags = false;             break;
-                }
-            } while (more_flags);
-
-            /** Evaluate width field. */
-            unsigned int width = 0;
-            if (isdigit(*fmt)) {
-                flags |= FLAG_WIDTH;
-                width = _stou(&fmt);
-            }
-
-            /** Evaluate precision field. */
-            unsigned int precision = 0;
-            if (*fmt == '.') {
-                flags |= FLAG_PRECISION;
-                fmt++;
-                if (isdigit(*fmt))
-                    precision = _stou(&fmt);
-            }
-
-            /** Evaluate length field. Assumes 'size_t' is of length long. */
-            switch (*fmt) {
-            case 'l': flags |= FLAG_LEN_LONG;  fmt++; break;
-            case 'h': flags |= FLAG_LEN_SHORT; fmt++; break;
-            case 'r': flags |= FLAG_LEN_CHAR;  fmt++; break;
-            case 'z': flags |= FLAG_LEN_LONG;  fmt++; break;
-            default:                                  break;
-            }
-
-            /** Switch on the type specifier. */
-            bool valid_specifier = true;
-            switch (*fmt) {
-
-            case 'd':   /** Integer types. */
-            case 'i':
-            case 'u':
-            case 'b':
-            case 'o':
-            case 'X':
-            case 'x': ;
-                unsigned long base = 10;
-
-                /** Set the base for different aries. */
-                switch (*fmt) {
-                case 'b': base = 2;  break;
-                case 'o': base = 8;  break;
-                case 'X':
-                case 'x': base = 16; break;
-                case 'u':
-                case 'd':
-                case 'i': base = 10; break;
-                }
-
-                if (base == 10)     /** No prefix for decimals. */
-                    flags &= ~FLAG_PREFIX;
-
-                if ((*fmt != 'i') && (*fmt != 'd'))     /** Limit signs. */
-                    flags &= ~(FLAG_PLUSSIGN | FLAG_SPACESIGN);
-
-                if (*fmt == 'X')    /** Set uppercase for 'X'. */
-                    flags |= FLAG_UPPERCASE;
-
-                /**
-                 * Read in the corresponding argument. Note how we set the
-                 * second argument of 'va_arg' here. Check the first section
-                 * of https://www.eskimo.com/~scs/cclass/int/sx11c.html :)
-                 */
-                unsigned long i_val;
-                bool i_negative;
-                if (*fmt == 'i' || *fmt == 'd') {   /** Signed. */
-                    long raw_val;
-                    if (flags & FLAG_LEN_LONG)
-                        raw_val = va_arg(va, long);
-                    else
-                        raw_val = va_arg(va, int);
-                    i_negative = raw_val < 0;
-                    i_val = (unsigned long) i_negative ? 0 - raw_val : raw_val;
-                } else {                            /** Unsigned. */
-                    if (flags & FLAG_LEN_LONG)
-                        i_val = va_arg(va, unsigned long);
-                    else
-                        i_val = va_arg(va, unsigned int);
-                    i_negative = false;
-                }
-
-                /** Format the number into a string in buffer. */
-                char i_buf[INTERNAL_BUF_SIZE];
-                size_t i_written = _itos(i_buf, i_val, i_negative,
-                                         base, width, flags);
-
-                /** Dump the internal buffer to actual output. */
-                terminal_write_color(i_buf, i_written, fg);
-
-                fmt++;
-                break;
-
-            case 'f':   /** Float types. */
-            case 'F':
-
-                if (*fmt == 'F')    /** Set uppercase for 'F'. */
-                    flags |= FLAG_UPPERCASE;
-
-                /**
-                 * Read in the corresponding argument. Note how we set the
-                 * second argument of 'va_arg' here. Check the first section
-                 * of https://www.eskimo.com/~scs/cclass/int/sx11c.html ;)
-                 */
-                double f_val = va_arg(va, double);
-                bool f_negative = f_val < 0;
-                if (f_negative)
-                    f_val = 0 - f_val;
-
-                /** Format the number into a string in buffer. */
-                char f_buf[INTERNAL_BUF_SIZE];
-                size_t f_written = _ftos(f_buf, f_val, f_negative,
-                                         width, precision, flags);
-
-                /** Dump the internal buffer to actual output. */
-                terminal_write_color(f_buf, f_written, fg);
-
-                fmt++;
-                break;
-
-            case 'c': ; /** Single char. */
-
-                char c_val = (char) va_arg(va, int);
-
-                if (width > 1) {
-                    char c_buf[width - 1];
-                    for (size_t i = 0; i < width - 1; ++i)
-                        c_buf[i] = ' ';
-
-                    if (flags & FLAG_LEFTALIGN) {
-                        terminal_write_color(&c_val, 1, fg);
-                        terminal_write_color(c_buf, width - 1, fg);
-                    } else {
-                        terminal_write_color(c_buf, width - 1, fg);
-                        terminal_write_color(&c_val, 1, fg);
-                    }
-                } else
-                    terminal_write_color(&c_val, 1, fg);
-
-                fmt++;
-                break;
-
-            case 's': ; /** String. */
-                
-                const char *s_ptr = va_arg(va, char *);
-                size_t s_len = strlen(s_ptr);
-
-                if (width > s_len) {
-                    char s_buf[width - s_len];
-                    for (size_t i = 0; i < width - s_len; ++i)
-                        s_buf[i] = ' ';
-
-                    if (flags & FLAG_LEFTALIGN) {
-                        terminal_write_color(s_ptr, s_len, fg);
-                        terminal_write_color(s_buf, width - s_len, fg);
-                    } else {
-                        terminal_write_color(s_ptr, s_len, fg);
-                        terminal_write_color(s_buf, width - s_len, fg);
-                    }
-                } else
-                    terminal_write_color(s_ptr, s_len, fg);
-
-                fmt++;
-                break;
-
-            case 'p':   /** Pointer type. */
-
-                /** Pointer type := %0X padding to 2x length of (void *). */
-                width = 2 * sizeof(void *);
-                flags |= FLAG_UPPERCASE | FLAG_ZEROPAD;
-
-                unsigned long p_val = (unsigned long) va_arg(va, void *);
-
-                char p_buf[INTERNAL_BUF_SIZE];
-                size_t p_written = _itos(p_buf, p_val, false,
-                                         16, width, flags);
-
-                terminal_write_color(p_buf, p_written, fg);
-
-                fmt++;
-                break;
-
-            case '%':   /** '%%' interpreted as a single '%'. */
-
-                terminal_write_color("%", 1, fg);
-                
-                fmt++;
-                break;
-
-            default: valid_specifier = false; break;
-            }
-
-            /** Invalid specifier treated as normal chars in FMT string. */
-            if (valid_specifier)
-                seg_start = fmt;
-            seg_end = fmt;
-
-            continue;
-        }
-
-        /** Normal characters are simply buffered. */
-        seg_end++;
-        fmt++;
-    }
-}
 
 /**
  * Main part of the formatted printing implementation to string buffer.
@@ -889,18 +634,29 @@ _vsnprintf(char *buf, size_t count, const char *fmt, va_list va)
     }
 }
 
+/** Wrapper over string printing for `printf()` and `cprintf()`. */
+static void
+_vprintf(vga_color_t fg, const char *fmt, va_list va)
+{
+    _vsnprintf(output_buf, OUTPUT_BUF_SIZE, fmt, va);
+    tprint(fg, output_buf);
+    memset(output_buf, 0, OUTPUT_BUF_SIZE);
+}
 
-/** Formatted printing to terminal window. */
+
+/**
+ * Formatted printing to an output buffer of length 1024, then give the
+ * string to kernel through one syscall.
+ */
 void
 printf(const char *fmt, ...)
 {
     va_list va;
     va_start(va, fmt);
-    _vprintf(TERMINAL_DEFAULT_COLOR_FG, fmt, va);
+    _vprintf(PRINTF_DEFAULT_COLOR, fmt, va);
     va_end(va);
 }
 
-/** Formatted printing to terminal window with specified color FG. */
 void
 cprintf(vga_color_t fg, const char *fmt, ...)
 {

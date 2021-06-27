@@ -11,6 +11,8 @@
 
 #include "../device/timer.h"
 
+#include "../interrupt/syscall.h"
+
 #include "../process/process.h"
 #include "../process/scheduler.h"
 

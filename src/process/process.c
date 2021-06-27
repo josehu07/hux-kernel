@@ -274,7 +274,7 @@ process_exit(void)
     process_t *proc = running_proc();
     assert(proc != initproc);
 
-    /** Parent might be blocking duet to waiting. */
+    /** Parent might be blocking due to waiting. */
     process_wakeup(proc->parent);
 
     /**
@@ -338,7 +338,7 @@ process_wait(void)
         bool have_kids = false;
 
         for (process_t *child = ptable; child < &ptable[MAX_PROCS]; ++child) {
-            if (child->parent == proc)
+            if (child->parent != proc)
                 continue;
 
             have_kids = true;

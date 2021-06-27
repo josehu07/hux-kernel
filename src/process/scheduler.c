@@ -40,8 +40,8 @@ scheduler(void)
             if (proc->state != READY)
                 continue;
 
-            info("scheduler: going to context switch to %d - '%s'",
-                 proc->pid, proc->name);
+            // info("scheduler: going to context switch to %d - '%s'",
+            //      proc->pid, proc->name);
 
             /** Set up TSS for this process, and switch page directory. */
             gdt_switch_tss(&(cpu_state.task_state), proc);

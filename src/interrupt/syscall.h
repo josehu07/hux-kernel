@@ -24,6 +24,7 @@
 #define SYSCALL_SLEEP   4
 #define SYSCALL_WAIT    5
 #define SYSCALL_KILL    6
+#define SYSCALL_TPRINT  7
 
 
 /**
