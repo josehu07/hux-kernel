@@ -399,7 +399,7 @@ paging_init(void)
      * frames (from 0 -> KMEM_MAX) as its identity virtual address in
      * the kernel page table, and reserve this entire physical memory region.
      *
-     * Assuems that `frame_bitmap_alloc()` behaves sequentially.
+     * Assumes that `frame_bitmap_alloc()` behaves sequentially.
      */
     uint32_t addr = 0;
     while (addr < KMEM_MAX) {

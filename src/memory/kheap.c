@@ -82,8 +82,8 @@ kalloc(size_t size)
             header_curr->size = size;
 
             /**
-             * Now, update the links between nodes. The special of list only
-             * having one node needs to be taken care of carefully.
+             * Now, update the links between nodes. The special case of list
+             * only having one node needs to be taken care of.
              * 
              * If only one node in list, then `header_last` == `header_curr`,
              * so `last_search_header` should be the new node, not the current
@@ -153,7 +153,7 @@ kfree(void *addr)
 
     /**
      * Special case of empty free-list (all bytes exactly allocated before
-     * this `kfree()` call). If so, just add this freed obejct as a node.
+     * this `kfree()` call). If so, just add this free'd obejct as a node.
      */
     if (free_list_length == 0) {
         header->next = header;
