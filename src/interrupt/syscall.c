@@ -12,6 +12,8 @@
 
 #include "../display/sysdisp.h"
 
+#include "../device/sysdev.h"
+
 #include "../interrupt/isr.h"
 
 #include "../process/layout.h"
@@ -28,7 +30,9 @@ static syscall_t syscall_handlers[] = {
     [SYSCALL_SLEEP]     syscall_sleep,
     [SYSCALL_WAIT]      syscall_wait,
     [SYSCALL_KILL]      syscall_kill,
-    [SYSCALL_TPRINT]    syscall_tprint
+    [SYSCALL_TPRINT]    syscall_tprint,
+    [SYSCALL_UPTIME]    syscall_uptime,
+    [SYSCALL_KBDSTR]    syscall_kbdstr
 };
 
 #define NUM_SYSCALLS ((int32_t) (sizeof(syscall_handlers) / sizeof(syscall_t)))

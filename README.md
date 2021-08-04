@@ -99,5 +99,6 @@ Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kerne
 - [ ] Synchronization primitives
 - [ ] Basic IDE disk driver
 - [ ] Very simple file system
+- [ ] Security & authentication
 - [ ] Wiki pages & README
 - [ ] Extend Hux to Rux with Rust

@@ -25,6 +25,8 @@ void terminal_init();
 void terminal_write(const char *data, size_t size);
 void terminal_write_color(const char *data, size_t size, vga_color_t fg);
 
+void terminal_erase();
+
 void terminal_clear();
 
 

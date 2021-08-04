@@ -37,14 +37,23 @@ struct process_context {
 };
 typedef struct process_context process_context_t;
 
+
 /** Process state. */
+enum process_block_on {
+    NOTHING,
+    ON_SLEEP,
+    ON_WAIT,
+    ON_KBDIN
+    // ... (TODO)
+};
+typedef enum process_block_on process_block_on_t;
+
 enum process_state {
     UNUSED,     /** Indicates PCB slot unused. */
     INITIAL,
     READY,
     RUNNING,
-    BLOCKED_ON_SLEEP,
-    BLOCKED_ON_WAIT,
+    BLOCKED,
     TERMINATED
 };
 typedef enum process_state process_state_t;
@@ -56,6 +65,7 @@ struct process {
     int8_t pid;                     /** Process ID. */
     process_context_t *context;     /** Registers context. */
     process_state_t state;          /** Process state */
+    process_block_on_t block_on;    /** If state is BLOCKED, the reason. */
     pde_t *pgdir;                   /** Process page directory. */
     uint32_t kstack;                /** Bottom of its kernel stack. */
     interrupt_state_t *trap_state;  /** Trap state of latest trap. */
@@ -77,14 +87,13 @@ extern process_t *initproc;
 void process_init();
 void initproc_init();
 
+void process_block(process_block_on_t reason);
+void process_unblock(process_t *proc);
+
 int8_t process_fork();
-
 void process_exit();
-
 void process_sleep(uint32_t sleep_ticks);
-
 int8_t process_wait();
-
 int8_t process_kill(int8_t pid);
 
 

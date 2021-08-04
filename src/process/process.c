@@ -67,6 +67,7 @@ _alloc_new_process(void)
 
     /** Make proper setups for the new process. */
     proc->state = INITIAL;
+    proc->block_on = NOTHING;
     proc->pid = next_pid++;
     proc->target_tick = 0;
 
@@ -258,12 +259,24 @@ process_fork(void)
 }
 
 
-/** Wake up a process by setting it to READY state. */
-static void
-process_wakeup(process_t *proc)
+/** Block the running process on the given reason. */
+inline void
+process_block(process_block_on_t reason)
 {
-    if (proc->state == BLOCKED_ON_WAIT)
-        proc->state = READY;
+    process_t *proc = running_proc();
+
+    proc->block_on = reason;
+    proc->state = BLOCKED;
+
+    yield_to_scheduler();
+}
+
+/** Unblock a process by setting it to READY state and clear the reason. */
+inline void
+process_unblock(process_t *proc)
+{
+    proc->block_on = NOTHING;
+    proc->state = READY;
 }
 
 
@@ -275,7 +288,8 @@ process_exit(void)
     assert(proc != initproc);
 
     /** Parent might be blocking due to waiting. */
-    process_wakeup(proc->parent);
+    if (proc->parent->state == BLOCKED && proc->parent->block_on == ON_WAIT)
+        process_unblock(proc->parent);
 
     /**
      * A process must have waited all its children before calling `exit()`
@@ -291,7 +305,7 @@ process_exit(void)
         if (child->parent == proc) {
             child->parent = initproc;
             if (child->state == TERMINATED)
-                process_wakeup(initproc);
+                process_unblock(initproc);
         }
     }
 
@@ -312,8 +326,7 @@ process_sleep(uint32_t sleep_ticks)
     uint32_t target_tick = timer_tick + sleep_ticks;
     proc->target_tick = target_tick;
 
-    proc->state = BLOCKED_ON_SLEEP;
-    yield_to_scheduler();
+    process_block(ON_SLEEP);
 
     /** Could be re-scheduled only if `timer_tick` passed `target_tick`. */
 }
@@ -371,17 +384,14 @@ process_wait(void)
          * Otherwise, some child process is still running. Block until
          * a child wakes me up at its exit.
          */
-        proc->state = BLOCKED_ON_WAIT;
-        yield_to_scheduler();
+        process_block(ON_WAIT);
 
         /** Could be re-scheduled after being woken up. */
     }
 }
 
 
-/**
- * Force to kill a process by pid. Returns -1 if given pid not found.
- */
+/** Force to kill a process by pid. Returns -1 if given pid not found. */
 int8_t
 process_kill(int8_t pid)
 {
@@ -390,10 +400,8 @@ process_kill(int8_t pid)
             proc->killed = true;
 
             /** Wake it up in case it is blocking on anything. */
-            if (proc->state == BLOCKED_ON_WAIT
-                || proc->state == BLOCKED_ON_SLEEP) {
-                proc->state = READY;
-            }
+            if (proc->state == BLOCKED)
+                process_unblock(proc);
 
             return 0;
         }

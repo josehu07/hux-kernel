@@ -10,10 +10,16 @@
 
 #include "../common/port.h"
 #include "../common/printf.h"
+#include "../common/debug.h"
+#include "../common/string.h"
 
 #include "../display/vga.h"
+#include "../display/terminal.h"
 
 #include "../interrupt/isr.h"
+
+#include "../process/process.h"
+#include "../process/scheduler.h"
 
 
 /**
@@ -480,9 +486,25 @@ static keyboard_key_event_t extendcode_event_map[0xE0] = {
 };
 
 
+/** A circular buffer for recording the input string from keyboard. */
+#define INPUT_BUF_SIZE 256
+static char input_buf[INPUT_BUF_SIZE];
+
 /**
- * Timer interrupt handler registered for IRQ # 1.
- * Echoing keystrokes on keyboard.
+ * These two numbers grow indefinitely. `loc % INPUT_BUF_SIZE` is the
+ * actual index in the circular buffer.
+ */
+static size_t input_put_loc = 0;   // Place to record the next char.
+static size_t input_get_loc = 0;   // Start of the first unfetched char.
+
+
+/** If not NULL, that process is listening on keyboard events. */
+static process_t *listener_proc = NULL;
+
+
+/**
+ * Keyboard interrupt handler registered for IRQ #1.
+ * Serves keyboard input requests.
  */
 static void
 keyboard_interrupt_handler(interrupt_state_t *state)
@@ -504,11 +526,38 @@ keyboard_interrupt_handler(interrupt_state_t *state)
             event = extendcode_event_map[extendcode];
     }
 
-    if (event.press && event.ascii)
-        cprintf(VGA_COLOR_LIGHT_BROWN, "%c", event.info.code);
+    /** React only if no overwriting could happen. */
+    if (input_put_loc - input_get_loc < INPUT_BUF_SIZE) {
+        bool is_ascii = event.press && event.ascii;
+        bool is_enter = event.press && !event.ascii
+                        && event.info.meta == KEY_ENTER;
+        bool is_back = event.press && !event.ascii
+                       && event.info.meta == KEY_BACK;
 
-    if (event.press && !event.ascii && event.info.meta == KEY_SHIFT)
-        cprintf(VGA_COLOR_RED, "[SHIFT]");
+        /**
+         * If one is listening on keyboard input, record the char to the
+         * circular buffer, unblock it when buffer is full or when an
+         * ENTER press happens. Interactively displays the character.
+         */
+        if (listener_proc != NULL && listener_proc->state == BLOCKED
+            && listener_proc->block_on == ON_KBDIN) {
+            if (is_ascii || is_enter) {
+                char c = is_ascii ? event.info.code : '\n';
+                input_buf[(input_put_loc++) % INPUT_BUF_SIZE] = c;
+                printf("%c", c);
+            } else if (is_back) {
+                if (input_put_loc > input_get_loc) {
+                    input_put_loc--;
+                    terminal_erase();
+                }
+            }
+
+            if (is_enter
+                || input_put_loc == input_get_loc + INPUT_BUF_SIZE) {
+                process_unblock(listener_proc);
+            }
+        }
+    }
 }
 
 
@@ -519,6 +568,66 @@ keyboard_interrupt_handler(interrupt_state_t *state)
 void
 keyboard_init()
 {
+    memset(input_buf, 0, sizeof(char) * INPUT_BUF_SIZE);
+
+    input_put_loc = 0;
+    input_get_loc = 0;
+
+    listener_proc = NULL;
+
     /** Register timer interrupt ISR handler. */
     isr_register(INT_NO_KEYBOARD, &keyboard_interrupt_handler);
+}
+
+
+/**
+ * Listen on keyboard characters, interpret as an input string, and write the
+ * string into the given buffer. Returns the length of the string actually
+ * fetched, or -1 on errors.
+ * 
+ * The listening terminates on any of the following cases:
+ *   - A total of `len - 1` bytes have been fetched;
+ *   - Got a newline symbol.
+ *
+ * Currently only supports lower cased ASCII characters and newline. Assumes
+ * at most one process could be listening on keyboard input at the same time.
+ */
+size_t
+keyboard_getstr(char *buf, size_t len)
+{
+    assert(buf != NULL);
+    assert(len > 0);
+
+    process_t *proc = running_proc();
+    size_t left = len;
+    
+    input_get_loc = input_put_loc;
+    listener_proc = proc;
+
+    while (left > 1) {
+        /** Wait until there are unhandled chars. */
+        while (input_get_loc == input_put_loc) {
+            if (proc->killed)
+                return -1;
+            process_block(ON_KBDIN);
+        }
+
+        /** Fetch the next unhandled char. */
+        char c = input_buf[(input_get_loc++) % INPUT_BUF_SIZE];
+
+        *(buf++) = c;
+        left--;
+
+        if (c == '\n')
+            break;
+    }
+
+    /** Fill a null-terminator to finish the string. */
+    size_t fetched = len - left;
+    buf[fetched] = '\0';
+
+    /** Clear the listener. */
+    listener_proc = NULL;
+
+    return fetched;
 }

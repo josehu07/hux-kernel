@@ -9,6 +9,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 
 /** A partial set of special keys on US QWERTY keyboard. */
@@ -54,6 +55,8 @@ typedef struct keyboard_key_event keyboard_key_event_t;
 
 
 void keyboard_init();
+
+size_t keyboard_getstr(char *buf, size_t len);
 
 
 #endif

@@ -46,9 +46,13 @@ main(void)
         printf("  Parent: killed child 1\n");
     }
 
-    sleep(2000);
-
     cprintf(VGA_COLOR_LIGHT_GREEN, "\n Round 2 --\n");
+    printf("  Current uptime: %d ms\n", uptime());
+    printf("  Going to sleep for 2000 ms...\n");
+    sleep(2000);
+    printf("  Current uptime: %d ms\n", uptime());
+
+    cprintf(VGA_COLOR_LIGHT_GREEN, "\n Round 3 --\n");
     printf("  Parent: forking child 2\n");
     int32_t pid2 = fork();
     if (pid2 < 0) {
@@ -66,6 +70,12 @@ main(void)
         wait();
         printf("  Parent: waited child 2\n");
     }
+
+    cprintf(VGA_COLOR_LIGHT_GREEN, "\n Round 4 --\n");
+    char kbd_buf[100];
+    printf("  Parent: please give an input str: ");
+    kbdstr(kbd_buf, 100);
+    printf("  Parent: input str from keyboard : %s\n", kbd_buf);
 
     cprintf(VGA_COLOR_GREEN, "\n Cases done!\n");
 

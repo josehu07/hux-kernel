@@ -131,6 +131,7 @@ terminal_init(void)
     _enable_cursor();
 }
 
+
 /** Write a sequence of data. */
 void
 terminal_write(const char *data, size_t size)
@@ -146,6 +147,26 @@ terminal_write_color(const char *data, size_t size, vga_color_t fg)
         _putchar_color(data[i], fg);
     _update_cursor();
 }
+
+
+/** Erase (backspace) a character. */
+void
+terminal_erase(void)
+{
+    if (terminal_col > 0)
+        terminal_col--;
+    else if (terminal_row > 0) {
+        terminal_row--;
+        terminal_col = VGA_WIDTH - 1;
+    }
+
+    size_t idx = terminal_row * VGA_WIDTH + terminal_col;
+    terminal_buf[idx] = vga_entry(TERMINAL_DEFAULT_COLOR_BG,
+                                  TERMINAL_DEFAULT_COLOR_FG, ' ');
+
+    _update_cursor();
+}
+
 
 /** Clear the terminal window by flushing spaces. */
 void

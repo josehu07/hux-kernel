@@ -25,6 +25,8 @@
 #define SYSCALL_WAIT    5
 #define SYSCALL_KILL    6
 #define SYSCALL_TPRINT  7
+#define SYSCALL_UPTIME  8
+#define SYSCALL_KBDSTR  9
 
 
 /**
