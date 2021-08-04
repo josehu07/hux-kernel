@@ -526,37 +526,34 @@ keyboard_interrupt_handler(interrupt_state_t *state)
             event = extendcode_event_map[extendcode];
     }
 
-    /** React only if no overwriting could happen. */
-    if (input_put_loc - input_get_loc < INPUT_BUF_SIZE) {
+    /**
+     * React only if no overwriting could happen and if a process is
+     * listening on keyboard input. Record the char to the circular buffer,
+     * unblock it when buffer is full or when an ENTER press happens.
+     * Interactively displays the character.
+     */
+    if (input_put_loc - input_get_loc < INPUT_BUF_SIZE
+        && listener_proc != NULL && listener_proc->state == BLOCKED
+        && listener_proc->block_on == ON_KBDIN) {
         bool is_ascii = event.press && event.ascii;
         bool is_enter = event.press && !event.ascii
                         && event.info.meta == KEY_ENTER;
         bool is_back = event.press && !event.ascii
                        && event.info.meta == KEY_BACK;
 
-        /**
-         * If one is listening on keyboard input, record the char to the
-         * circular buffer, unblock it when buffer is full or when an
-         * ENTER press happens. Interactively displays the character.
-         */
-        if (listener_proc != NULL && listener_proc->state == BLOCKED
-            && listener_proc->block_on == ON_KBDIN) {
-            if (is_ascii || is_enter) {
-                char c = is_ascii ? event.info.code : '\n';
-                input_buf[(input_put_loc++) % INPUT_BUF_SIZE] = c;
-                printf("%c", c);
-            } else if (is_back) {
-                if (input_put_loc > input_get_loc) {
-                    input_put_loc--;
-                    terminal_erase();
-                }
-            }
-
-            if (is_enter
-                || input_put_loc == input_get_loc + INPUT_BUF_SIZE) {
-                process_unblock(listener_proc);
+        if (is_ascii || is_enter) {
+            char c = is_ascii ? event.info.code : '\n';
+            input_buf[(input_put_loc++) % INPUT_BUF_SIZE] = c;
+            printf("%c", c);
+        } else if (is_back) {
+            if (input_put_loc > input_get_loc) {
+                input_put_loc--;
+                terminal_erase();
             }
         }
+
+        if (is_enter || input_put_loc == input_get_loc + INPUT_BUF_SIZE)
+            process_unblock(listener_proc);
     }
 }
 
@@ -614,11 +611,10 @@ keyboard_getstr(char *buf, size_t len)
 
         /** Fetch the next unhandled char. */
         char c = input_buf[(input_get_loc++) % INPUT_BUF_SIZE];
-
         *(buf++) = c;
         left--;
 
-        if (c == '\n')
+        if (c == '\n')  /** Newline triggers early break. */
             break;
     }
 
