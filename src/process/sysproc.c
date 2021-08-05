@@ -39,15 +39,13 @@ syscall_exit(void)
     return 0;   /** Not reached. */
 }
 
-/** int8_t sleep(int32_t millisecs); */
+/** int8_t sleep(uint32_t millisecs); */
 int32_t
 syscall_sleep(void)
 {
-    int32_t millisecs;
+    uint32_t millisecs;
     
-    if (!sysarg_get_int(0, &millisecs))
-        return SYS_FAIL_RC;
-    if (millisecs < 0)
+    if (!sysarg_get_uint(0, &millisecs))
         return SYS_FAIL_RC;
 
     uint32_t sleep_ticks = millisecs * TIMER_FREQ_HZ / 1000;

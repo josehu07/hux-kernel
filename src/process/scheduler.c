@@ -40,6 +40,8 @@ scheduler(void)
             if (proc->state != READY)
                 continue;
 
+            info("Going to context switch to '%s'", proc->name);
+
             // info("scheduler: going to context switch to %d - '%s'",
             //      proc->pid, proc->name);
 

@@ -17,7 +17,7 @@
 int32_t
 syscall_uptime(void)
 {
-    return timer_tick * 1000 / TIMER_FREQ_HZ;
+    return (int32_t) (timer_tick * 1000 / TIMER_FREQ_HZ);
 }
 
 /** int32_t kbdstr(char *buf, int32_t len); */
@@ -34,5 +34,5 @@ syscall_kbdstr(void)
     if (!sysarg_get_mem(0, &buf, len))
         return SYS_FAIL_RC;
 
-    return keyboard_getstr(buf, len);
+    return (int32_t) (keyboard_getstr(buf, len));
 }

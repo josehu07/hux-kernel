@@ -45,8 +45,7 @@
  * 
  * See https://wiki.osdev.org/Paging for the detailed definition.
  */
-struct page_table_entry
-{
+struct page_table_entry {
     uint32_t present  :  1;     /** Set -> present in memory. */
     uint32_t writable :  1;     /** Set -> user writable. (read/write bit) */
     uint32_t user     :  1;     /** Set -> user accessible. */
@@ -64,8 +63,7 @@ typedef struct page_table_entry pte_t;
  * 
  * See https://wiki.osdev.org/Paging for the detailed definition.
  */
-struct page_directory_entry
-{
+struct page_directory_entry {
     uint32_t present  :  1;     /** Set -> present in memory. */
     uint32_t writable :  1;     /** Set -> user writable. (read/write bit) */
     uint32_t user     :  1;     /** Set -> user accessible. */

@@ -16,6 +16,8 @@
 
 #include "../interrupt/isr.h"
 
+#include "../memory/sysmem.h"
+
 #include "../process/layout.h"
 #include "../process/process.h"
 #include "../process/scheduler.h"
@@ -32,7 +34,9 @@ static syscall_t syscall_handlers[] = {
     [SYSCALL_KILL]      syscall_kill,
     [SYSCALL_TPRINT]    syscall_tprint,
     [SYSCALL_UPTIME]    syscall_uptime,
-    [SYSCALL_KBDSTR]    syscall_kbdstr
+    [SYSCALL_KBDSTR]    syscall_kbdstr,
+    [SYSCALL_GETHEAP]   syscall_getheap,
+    [SYSCALL_SETHEAP]   syscall_setheap
 };
 
 #define NUM_SYSCALLS ((int32_t) (sizeof(syscall_handlers) / sizeof(syscall_t)))
@@ -89,6 +93,23 @@ sysarg_get_int(int8_t n, int32_t *ret)
     }
 
     *ret = *((int32_t *) addr);
+    return true;
+}
+
+/** Same but for uint32_t. */
+bool
+sysarg_get_uint(int8_t n, uint32_t *ret)
+{
+    process_t *proc = running_proc();
+    uint32_t addr = (proc->trap_state->esp) + 4 + (4 * n);
+
+    /** If not in valid user stack region. */
+    if (addr < proc->stack_low || addr + 4 > USER_MAX) {
+        warn("sysarg_get_uint: invalid arg addr %p for %s", addr, proc->name);
+        return false;
+    }
+
+    *ret = *((uint32_t *) addr);
     return true;
 }
 

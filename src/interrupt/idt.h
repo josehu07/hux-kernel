@@ -15,8 +15,7 @@
  * Check out https://wiki.osdev.org/IDT for detailed anatomy
  * of fields.
  */
-struct idt_gate
-{
+struct idt_gate {
     uint16_t base_lo;   /** Base 0:15. */
     uint16_t selector;  /** Segment selector. */
     uint8_t  zero;      /** Unused. */
@@ -30,8 +29,7 @@ typedef struct idt_gate idt_gate_t;
  * 48-bit IDTR address register format.
  * Used for loading the IDT with `lidt` instruction.
  */
-struct idt_register
-{
+struct idt_register {
     uint16_t boundary;  /** Boundary = length in bytes - 1. */
     uint32_t base;      /** IDT base address. */
 } __attribute__((packed));

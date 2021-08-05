@@ -17,8 +17,7 @@
 
 
 /** Hardcoded 4-bit VGA color codes. */
-enum vga_color
-{
+enum vga_color {
     VGA_COLOR_BLACK         = 0,
     VGA_COLOR_BLUE          = 1,
     VGA_COLOR_GREEN         = 2,

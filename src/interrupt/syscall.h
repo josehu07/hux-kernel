@@ -27,6 +27,8 @@
 #define SYSCALL_TPRINT  7
 #define SYSCALL_UPTIME  8
 #define SYSCALL_KBDSTR  9
+#define SYSCALL_GETHEAP 10
+#define SYSCALL_SETHEAP 11
 
 
 /**
@@ -85,6 +87,7 @@ void syscall(interrupt_state_t *state);
 
 
 bool sysarg_get_int(int8_t n, int32_t *ret);
+bool sysarg_get_uint(int8_t n, uint32_t *ret);
 bool sysarg_get_mem(int8_t n, char **mem, size_t len);
 int32_t sysarg_get_str(int8_t n, char **str);
 

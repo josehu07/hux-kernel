@@ -18,8 +18,7 @@
  * Check out https://wiki.osdev.org/Global_Descriptor_Table
  * for detailed anatomy of fields.
  */
-struct gdt_entry
-{
+struct gdt_entry {
     uint16_t limit_lo;          /** Limit 0:15. */
     uint16_t base_lo;           /** Base 0:15. */
     uint8_t  base_mi;           /** Base 16:23. */
@@ -34,8 +33,7 @@ typedef struct gdt_entry gdt_entry_t;
  * 48-bit GDTR address register format.
  * Used for loading the GDT table with `lgdt` instruction.
  */
-struct gdt_register
-{
+struct gdt_register {
     uint16_t boundary;  /** Boundary = length in bytes - 1. */
     uint32_t base;      /** GDT base address. */
 } __attribute__((packed));
