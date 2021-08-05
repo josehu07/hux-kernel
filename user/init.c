@@ -22,17 +22,17 @@ main(void)
 {
     printf("\n");
 
-    int32_t mypid = getpid();
-    printf(" Parent: parent gets pid - %d\n", mypid);
-    sleep(2000);
+    // int32_t mypid = getpid();
+    // printf(" Parent: parent gets pid - %d\n", mypid);
+    // sleep(2000);
 
     char *buf1 = (char *) malloc(200);
-    printf("  Buf1: %p\n", buf1);
+    printf("Buf1: %p\n", buf1);
     char *buf2 = (char *) malloc(4777);
-    printf("  Buf2: %p\n", buf2);
+    printf("Buf2: %p\n", buf2);
     mfree(buf1);
     char *buf3 = (char *) malloc(8);
-    printf("  Buf3: %p\n", buf3);
+    printf("Buf3: %p\n", buf3);
     mfree(buf3);
     mfree(buf2);
 
