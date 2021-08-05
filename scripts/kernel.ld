@@ -21,6 +21,7 @@ SECTIONS
     {
         KEEP(*(.multiboot))     /** Put multiboot header before code. */
         *(.text)
+        *(.comment)
     }
 
     .rodata ALIGN(4K):

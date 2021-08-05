@@ -25,7 +25,6 @@ extern int8_t kill(int8_t pid);
 extern void tprint(vga_color_t color, char *str);
 extern int32_t uptime();
 extern int32_t kbdstr();
-extern int8_t getheap(uint32_t *heap_top);
 extern int8_t setheap(uint32_t new_top);
 
 

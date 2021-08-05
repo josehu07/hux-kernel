@@ -27,8 +27,7 @@
 #define SYSCALL_TPRINT  7
 #define SYSCALL_UPTIME  8
 #define SYSCALL_KBDSTR  9
-#define SYSCALL_GETHEAP 10
-#define SYSCALL_SETHEAP 11
+#define SYSCALL_SETHEAP 10
 
 
 /**

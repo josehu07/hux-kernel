@@ -49,7 +49,7 @@ _heap_init(void)
     assert(!uheap_initialized);
 
     /** Make the first heap page. */
-    assert(getheap(&uheap_btm) == 0);
+    uheap_btm = HEAP_BASE;
     uheap_top = uheap_btm + PAGE_SIZE;
     if (setheap(uheap_top) != 0) {
         warn("malloc: cannot initialize heap, out of memory?");
@@ -94,7 +94,27 @@ _heap_enlarge(size_t size)
     header->size = chunk_size;
     header->free = true;
     header->magic = UHEAP_MAGIC;
-    mfree((char *) (HEADER_TO_OBJECT(uheap_top)));
+
+    if (free_list_length == 0) {
+        header->next = header;
+        bottom_most_header = header;
+        last_search_header = header;
+        free_list_length++;
+    } else {
+        fl_header_t *dn_header = bottom_most_header;
+        while (dn_header->next != bottom_most_header)
+            dn_header = dn_header->next;
+        bool dn_coalesable =
+            HEADER_TO_OBJECT((uint32_t) dn_header) + dn_header->size == (uint32_t) header;
+
+        if (dn_coalesable)
+            dn_header->size += header->size + sizeof(fl_header_t);
+        else {
+            dn_header->next = header;
+            header->next = bottom_most_header;
+            free_list_length++;
+        }
+    }
 
     return true;
 }

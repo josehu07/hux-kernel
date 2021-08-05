@@ -11,8 +11,10 @@
 #include <stdbool.h>
 
 
-/** An ugly, hardcoded export of the page size and some helper macros. */
+/** Hardcoded export of the page size and some helper macros. */
 #define PAGE_SIZE 4096
+
+#define HEAP_BASE 0x20100000
 
 #define ADDR_PAGE_OFFSET(addr) ((addr) & 0x00000FFF)
 #define ADDR_PAGE_NUMBER(addr) ((addr) >> 12)

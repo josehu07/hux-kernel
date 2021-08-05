@@ -35,7 +35,6 @@ static syscall_t syscall_handlers[] = {
     [SYSCALL_TPRINT]    syscall_tprint,
     [SYSCALL_UPTIME]    syscall_uptime,
     [SYSCALL_KBDSTR]    syscall_kbdstr,
-    [SYSCALL_GETHEAP]   syscall_getheap,
     [SYSCALL_SETHEAP]   syscall_setheap
 };
 

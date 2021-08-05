@@ -30,5 +30,11 @@
  */
 #define USER_BASE 0x20000000
 
+/**
+ * Hux allows user executable to take up at most 1MiB space, starting
+ * at USER_BASE and ending no higher than HEAP_BASE.
+ */
+#define HEAP_BASE 0x20100000
+
 
 #endif

@@ -58,7 +58,7 @@ HUX_MSG="[--Hux->]"
 #
 ALL_DEPS := $(S_OBJECTS) $(C_OBJECTS)
 ALL_DEPS += $(ULIB_S_OBJECTS) $(ULIB_C_OBJECTS) $(USER_BINARYS) initproc
-ALL_DEPS += link verify update symfile
+ALL_DEPS += kernel verify update
 all: $(ALL_DEPS)
 
 $(S_OBJECTS): %.o: %.s
@@ -81,22 +81,26 @@ $(ULIB_C_OBJECTS): %.o: %.c
 $(USER_BINARYS): %.bin: %.c $(ULIB_S_OBJECTS) $(ULIB_C_OBJECTS)
 	@echo $(HUX_MSG) "Compiling & linking user program '$<'..."
 	$(CC) $(C_FLAGS_USER) -o $<.o $<
-	$(LD) $(LD_FLAGS) -N -e main -Ttext $(ADDRSPACE_USER_BASE) -o $@ \
+	$(LD) $(LD_FLAGS) -e main -Ttext $(ADDRSPACE_USER_BASE) -o $@ \
 		$<.o $(ULIB_S_OBJECTS) $(ULIB_C_OBJECTS)
+	$(OBJCOPY) --strip-debug $@
 
 # Init process goes separately, to allow later embedding into kernel image.
 initproc:
 	@echo $(HUX_MSG) "Compiling & linking user 'init' program..."
 	$(CC) $(C_FLAGS_USER) -o $(INIT_OBJECT) $(INIT_SOURCE)
-	$(LD) $(LD_FLAGS) -N -e main -Ttext $(ADDRSPACE_USER_BASE) -o $(INIT_LINKED) \
+	$(LD) $(LD_FLAGS) -e main -Ttext $(ADDRSPACE_USER_BASE) -o $(INIT_LINKED) \
 		$(INIT_OBJECT) $(ULIB_S_OBJECTS) $(ULIB_C_OBJECTS)
-	$(OBJCOPY) -S -O binary $(INIT_LINKED) $(INIT_BINARY)
+	$(OBJCOPY) --strip-debug $(INIT_LINKED)
+	$(OBJCOPY) --strip-all -O binary $(INIT_LINKED) $(INIT_BINARY)
 
 # Remember to link 'libgcc'. Embeds the init process binary.
-link: $(S_OBJECTS) $(C_OBJECTS) initproc
+kernel: $(S_OBJECTS) $(C_OBJECTS) initproc
 	@echo $(HUX_MSG) "Linking kernel image..."
 	$(LD) $(LD_FLAGS) -T scripts/kernel.ld -lgcc -o $(TARGET_BIN) -Wl,--oformat,elf32-i386 \
 		$(S_OBJECTS) $(C_OBJECTS) -Wl,-b,binary,$(INIT_BINARY)
+	$(OBJCOPY) --only-keep-debug $(TARGET_BIN) $(TARGET_SYM)
+	$(OBJCOPY) --strip-debug $(TARGET_BIN)
 
 
 #
@@ -121,16 +125,6 @@ update:
 	cp $(TARGET_BIN) isodir/boot/$(TARGET_BIN)
 	cp scripts/grub.cfg isodir/boot/grub/grub.cfg
 	grub-mkrescue -o $(TARGET_ISO) isodir
-
-
-#
-# Stripping symbols out of the ELF.
-#
-.PHONY: symfile
-symfile:
-	@echo $(HUX_MSG) "Stripping symbols into '$(TARGET_SYM)'..."
-	$(OBJCOPY) --only-keep-debug $(TARGET_BIN) $(TARGET_SYM)
-	$(OBJCOPY) --strip-debug $(TARGET_BIN)
 
 
 #

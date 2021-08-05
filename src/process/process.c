@@ -153,6 +153,15 @@ initproc_init(void)
         vaddr_elf += PAGE_SIZE;
         elf_curr += PAGE_SIZE;
     }
+
+    while (vaddr_elf < HEAP_BASE) {             /** Rest of ELF region. */
+        pte_t *pte = paging_walk_pgdir(proc->pgdir, vaddr_elf, true, false);
+        assert(pte != NULL);
+        uint32_t paddr = paging_map_upage(pte, true);
+        assert(paddr != 0);
+
+        vaddr_elf += PAGE_SIZE;
+    }
     
     uint32_t vaddr_top = USER_MAX - PAGE_SIZE;  /** Top stack page. */
     pte_t *pte_top = paging_walk_pgdir(proc->pgdir, vaddr_top, true, false);
@@ -170,7 +179,7 @@ initproc_init(void)
     proc->trap_state->eip = USER_BASE;   /** Beginning of ELF binary. */
 
     proc->stack_low = vaddr_top;
-    proc->heap_high = ADDR_PAGE_ROUND_UP(vaddr_elf);
+    proc->heap_high = HEAP_BASE;
 
     /** Set process state to READY so the scheduler can pick it up. */
     initproc = proc;

@@ -10,7 +10,6 @@
 #include <stdint.h>
 
 
-int32_t syscall_getheap();
 int32_t syscall_setheap();
 
 

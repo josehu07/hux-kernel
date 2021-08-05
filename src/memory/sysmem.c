@@ -15,19 +15,6 @@
 #include "../process/scheduler.h"
 
 
-/** int8_t getheap(uint32_t *heap_top); */
-int32_t
-syscall_getheap(void)
-{
-    uint32_t *heap_top;
-
-    if (!sysarg_get_mem(0, (char **) &heap_top, sizeof(uint32_t)))
-        return SYS_FAIL_RC;
-
-    *heap_top = running_proc()->heap_high;
-    return 0;
-}
-
 /** int8_t setheap(uint32_t new_top); */
 int32_t
 syscall_setheap(void)
