@@ -17,7 +17,7 @@ Hux - An x86 32-bit single-CPU toy operating system kernel built from scratch, f
 
 I document the whole development process of Hux - its skeleton, related theories, practice pitfalls, plus everything I reckon important as a complete set of tutorials. They can be found at:
 
-- The [**WIKI pages 📝**](https://github.com/hgz12345ssdlh/hux-kernel/wiki) of this repo
+- The [**WIKI pages 📝**](https://github.com/hgz12345ssdlh/hux-kernel/wiki) of this repo ✭
 - The Hux kernel dev doc PDF (identical, WIP)
 
 If there are any typos / mistakes / errors, please raise an issue!
@@ -95,10 +95,9 @@ Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kerne
 - [x] Process user mode execution
 - [x] Essential system calls
 - [ ] Time-sharing scheduler
+- [ ] Very simple file system
+- [ ] Basic IDE disk driver
 - [ ] Multi-threading concurrency
 - [ ] Synchronization primitives
-- [ ] Basic IDE disk driver
-- [ ] Very simple file system
-- [ ] Security & authentication
-- [ ] Wiki pages & README
+- [ ] Summary of current flaws
 - [ ] Extend Hux to Rux with Rust
