@@ -20,21 +20,26 @@ _fake_halt(void)
 void
 main(void)
 {
-    printf("\n");
+    // printf("\n");
+
+    char buf[8200];
+    buf[0] = 'A';
+    buf[1] = '\0';
+    printf("%s\n", buf);
 
     // int32_t mypid = getpid();
     // printf(" Parent: parent gets pid - %d\n", mypid);
     // sleep(2000);
 
-    char *buf1 = (char *) malloc(200);
-    printf("Buf1: %p\n", buf1);
-    char *buf2 = (char *) malloc(4777);
-    printf("Buf2: %p\n", buf2);
-    mfree(buf1);
-    char *buf3 = (char *) malloc(8);
-    printf("Buf3: %p\n", buf3);
-    mfree(buf3);
-    mfree(buf2);
+    // char *buf1 = (char *) malloc(200);
+    // printf("Buf1: %p\n", buf1);
+    // char *buf2 = (char *) malloc(4777);
+    // printf("Buf2: %p\n", buf2);
+    // mfree(buf1);
+    // char *buf3 = (char *) malloc(8);
+    // printf("Buf3: %p\n", buf3);
+    // mfree(buf3);
+    // mfree(buf2);
 
     // cprintf(VGA_COLOR_LIGHT_GREEN, "\n Round 1 --\n");
     // printf("  Parent: forking child 1\n");
@@ -88,7 +93,7 @@ main(void)
     // kbdstr(kbd_buf, 100);
     // printf("  Parent: input str from keyboard : %s\n", kbd_buf);
 
-    cprintf(VGA_COLOR_GREEN, "\n Cases done!\n");
+    // cprintf(VGA_COLOR_GREEN, "\n Cases done!\n");
 
-    _fake_halt();
+    // _fake_halt();
 }

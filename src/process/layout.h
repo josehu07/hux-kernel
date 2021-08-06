@@ -34,7 +34,10 @@
  * Hux allows user executable to take up at most 1MiB space, starting
  * at USER_BASE and ending no higher than HEAP_BASE.
  */
-#define HEAP_BASE 0x20100000
+#define HEAP_BASE (USER_BASE + 0x01000000)
+
+/** Max stack size limit is 1MiB. */
+#define STACK_MIN (USER_MAX - 0x00100000)
 
 
 #endif

@@ -16,6 +16,10 @@
 
 #include "../memory/slabs.h"
 
+#include "../process/process.h"
+#include "../process/scheduler.h"
+#include "../process/layout.h"
+
 
 /** Kernel heap bottom address - should be above `elf_shstrtab_end`. */
 uint32_t kheap_curr;
@@ -343,8 +347,8 @@ static void
 page_fault_handler(interrupt_state_t *state)
 {
     /** The CR2 register holds the faulty address. */
-    uint32_t vaddr;
-    asm ( "movl %%cr2, %0" : "=r" (vaddr) : );
+    uint32_t faulty_addr;
+    asm ( "movl %%cr2, %0" : "=r" (faulty_addr) : );
 
     /**
      * Analyze the least significant 3 bits of error code to see what
@@ -358,16 +362,51 @@ page_fault_handler(interrupt_state_t *state)
     bool present = state->err_code & 0x1;
     bool write   = state->err_code & 0x2;
     bool user    = state->err_code & 0x4;
+    process_t *proc = running_proc();
 
-    /** Just prints an information message for now. */
+    /**
+     * If is a valid stack growth page fault (within stack size limit
+     * and not meeting the heap upper boundary), then allocate and map
+     * the new pages.
+     */
+    if (!present && user && faulty_addr < proc->stack_low
+        && faulty_addr >= STACK_MIN && faulty_addr >= proc->heap_high) {
+        uint32_t old_btm = ADDR_PAGE_ROUND_DN(proc->stack_low);
+        uint32_t new_btm = ADDR_PAGE_ROUND_DN(faulty_addr);
+
+        uint32_t vaddr;
+        for (vaddr = new_btm; vaddr < old_btm; vaddr += PAGE_SIZE) {
+            pte_t *pte = paging_walk_pgdir(proc->pgdir, vaddr, true, false);
+            if (pte == NULL) {
+                warn("page_fault: cannot walk pgdir, out of kheap memory?");
+                break;
+            }
+            uint32_t paddr = paging_map_upage(pte, true);
+            if (paddr == 0) {
+                warn("page_fault: cannot map new page, out of memory?");
+                break;
+            }
+            memset((char *) paddr, 0, PAGE_SIZE);
+        }
+
+        if (vaddr < old_btm) {
+            warn("page_fault: stack growth to %p failed, killing", new_btm);
+            proc->killed = true;
+        } else
+            proc->stack_low = new_btm;
+
+        return;
+    }
+
+    /** Other page faults are considered truly harmful. */
     info("Caught page fault {\n"
          "  faulty addr = %p\n"
          "  present: %d\n"
          "  write:   %d\n"
          "  user:    %d\n"
-         "}", vaddr, present, write, user);
+         "} not handled!", faulty_addr, present, write, user);
 
-    panic("page fault not handled!");
+    proc->killed = true;
 }
 
 

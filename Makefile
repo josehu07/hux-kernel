@@ -62,23 +62,28 @@ ALL_DEPS += kernel verify update
 all: $(ALL_DEPS)
 
 $(S_OBJECTS): %.o: %.s
+	@echo
 	@echo $(HUX_MSG) "Compiling kernel assembly '$<'..."
 	$(ASM) $(ASM_FLAGS) -o $@ $<
 
 $(C_OBJECTS): %.o: %.c
+	@echo
 	@echo $(HUX_MSG) "Compiling kernel C code '$<'..."
 	$(CC) $(C_FLAGS) -o $@ $<
 
 # User programs use more specific rules to build into independent binary.
 $(ULIB_S_OBJECTS): %.o: %.s
+	@echo
 	@echo $(HUX_MSG) "Compiling user lib assembly '$<'..."
 	$(ASM) $(ASM_FLAGS) -I ./user/lib/ -o $@ $<
 
 $(ULIB_C_OBJECTS): %.o: %.c
+	@echo
 	@echo $(HUX_MSG) "Compiling user lib C code '$<'..."
 	$(CC) $(C_FLAGS_USER) -o $@ $<
 
 $(USER_BINARYS): %.bin: %.c $(ULIB_S_OBJECTS) $(ULIB_C_OBJECTS)
+	@echo
 	@echo $(HUX_MSG) "Compiling & linking user program '$<'..."
 	$(CC) $(C_FLAGS_USER) -o $<.o $<
 	$(LD) $(LD_FLAGS) -e main -Ttext $(ADDRSPACE_USER_BASE) -o $@ \
@@ -87,6 +92,7 @@ $(USER_BINARYS): %.bin: %.c $(ULIB_S_OBJECTS) $(ULIB_C_OBJECTS)
 
 # Init process goes separately, to allow later embedding into kernel image.
 initproc:
+	@echo
 	@echo $(HUX_MSG) "Compiling & linking user 'init' program..."
 	$(CC) $(C_FLAGS_USER) -o $(INIT_OBJECT) $(INIT_SOURCE)
 	$(LD) $(LD_FLAGS) -e main -Ttext $(ADDRSPACE_USER_BASE) -o $(INIT_LINKED) \
@@ -96,6 +102,7 @@ initproc:
 
 # Remember to link 'libgcc'. Embeds the init process binary.
 kernel: $(S_OBJECTS) $(C_OBJECTS) initproc
+	@echo
 	@echo $(HUX_MSG) "Linking kernel image..."
 	$(LD) $(LD_FLAGS) -T scripts/kernel.ld -lgcc -o $(TARGET_BIN) -Wl,--oformat,elf32-i386 \
 		$(S_OBJECTS) $(C_OBJECTS) -Wl,-b,binary,$(INIT_BINARY)
@@ -109,8 +116,10 @@ kernel: $(S_OBJECTS) $(C_OBJECTS) initproc
 .PHONY: verify
 verify:
 	@if grub-file --is-x86-multiboot $(TARGET_BIN); then	\
+		echo; 												\
 		echo $(HUX_MSG) "VERIFY MULTIBOOT: Confirmed ✓"; 	\
 	else													\
+		echo; 												\
 		echo $(HUX_MSG) "VERIFY MULTIBOOT: FAILED ✗";		\
 	fi
 
@@ -120,6 +129,7 @@ verify:
 #
 .PHONY: update
 update:
+	@echo
 	@echo $(HUX_MSG) "Writing to CDROM..."
 	mkdir -p isodir/boot/grub
 	cp $(TARGET_BIN) isodir/boot/$(TARGET_BIN)
@@ -132,16 +142,19 @@ update:
 #
 .PHONY: qemu
 qemu:
+	@echo
 	@echo $(HUX_MSG) "Launching QEMU..."
 	qemu-system-i386 -cdrom $(TARGET_ISO)
 
 .PHONY: qemu_debug
 qemu_debug:
+	@echo
 	@echo $(HUX_MSG) "Launching QEMU (debug mode)..."
 	qemu-system-i386 -S -s -cdrom $(TARGET_ISO)
 
 .PHONY: gdb
 gdb:
+	@echo
 	@echo $(HUX_MSG) "Launching GDB..."
 	gdb -x scripts/gdb_init
 
@@ -151,6 +164,8 @@ gdb:
 #
 .PHONY: clean
 clean:
+	@echo
+	@echo $(HUX_MSG) "Cleaning the build..."
 	rm -f $(S_OBJECTS) $(C_OBJECTS) $(ULIB_S_OBJECTS) $(ULIB_C_OBJECTS) \
 		$(INIT_OBJECT) $(INIT_LINKED) $(INIT_BINARY) $(USER_BINARYS) 	\
 		$(TARGET_BIN) $(TARGET_ISO) $(TARGET_SYM)
