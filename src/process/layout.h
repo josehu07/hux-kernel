@@ -31,13 +31,13 @@
 #define USER_BASE 0x20000000
 
 /**
- * Hux allows user executable to take up at most 1MiB space, starting
+ * Hux allows user executable to take up at most 16MiB space, starting
  * at USER_BASE and ending no higher than HEAP_BASE.
  */
 #define HEAP_BASE (USER_BASE + 0x01000000)
 
-/** Max stack size limit is 1MiB. */
-#define STACK_MIN (USER_MAX - 0x00100000)
+/** Max stack size limit is 16MiB. */
+#define STACK_MIN (USER_MAX - 0x01000000)
 
 
 #endif

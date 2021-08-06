@@ -93,7 +93,7 @@ Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kerne
 - [x] Virtual memory (paging)
 - [x] Heal memory allocators
 - [x] Process user mode execution
-- [ ] Essential system calls
+- [x] Essential system calls
 - [ ] Time-sharing scheduler
 - [ ] Multi-threading concurrency
 - [ ] Synchronization primitives
