@@ -39,11 +39,12 @@ enum keyboard_meta_key {
 typedef enum keyboard_meta_key keyboard_meta_key_t;
 
 /** Holds info for a keyboard key. */
-union keyboard_key_info {
+struct keyboard_key_info {
     keyboard_meta_key_t meta;   /** Special meta key. */
-    char code;                  /** ASCII byte code - lower case. */
+    char codel;                 /** ASCII byte code - lower case. */
+    char codeu;                 /** ASCII byte code - upper case. */
 };
-typedef union keyboard_key_info keyboard_key_info_t;
+typedef struct keyboard_key_info keyboard_key_info_t;
 
 /** Struct for a keyboard event. */
 struct keyboard_key_event {

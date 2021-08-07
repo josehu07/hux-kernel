@@ -24,7 +24,7 @@ extern int8_t wait();
 extern int8_t kill(int8_t pid);
 extern int32_t uptime();
 extern void tprint(vga_color_t color, char *str);
-extern int32_t kbdstr();
+extern int32_t kbdstr(char *buf, uint32_t len);
 extern int8_t setheap(uint32_t new_top);
 
 
