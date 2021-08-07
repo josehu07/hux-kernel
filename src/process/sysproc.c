@@ -8,6 +8,7 @@
 #include "sysproc.h"
 
 #include "../common/printf.h"
+#include "../common/debug.h"
 
 #include "../device/timer.h"
 
@@ -24,11 +25,22 @@ syscall_getpid(void)
     return running_proc()->pid;
 }
 
-/** int8_t fork(void); */
+/** int8_t fork(uint8_t timeslice); */
 int32_t
 syscall_fork(void)
 {
-    return process_fork();
+    uint32_t timeslice;
+
+    if (!sysarg_get_uint(0, &timeslice))
+        return SYS_FAIL_RC;
+    if (timeslice > 16) {
+        warn("fork: timeslice value cannot be larger than 16");
+        return SYS_FAIL_RC;
+    }
+
+    if (timeslice == 0)
+        return process_fork(running_proc()->timeslice);
+    return process_fork(timeslice);
 }
 
 /** void exit(void); */

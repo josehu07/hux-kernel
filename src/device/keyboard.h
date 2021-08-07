@@ -56,7 +56,7 @@ typedef struct keyboard_key_event keyboard_key_event_t;
 
 void keyboard_init();
 
-size_t keyboard_getstr(char *buf, size_t len);
+int32_t keyboard_getstr(char *buf, size_t len);
 
 
 #endif

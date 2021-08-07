@@ -11,6 +11,7 @@
 
 #include "../common/debug.h"
 #include "../common/string.h"
+#include "../common/intstate.h"
 
 #include "../interrupt/isr.h"
 
@@ -68,27 +69,41 @@ _kalloc_temp(size_t size, bool page_align)
 static inline void
 frame_bitmap_set(uint32_t frame_num)
 {
+    cli_push();
+
     size_t outer_idx = BITMAP_OUTER_IDX(frame_num);
     size_t inner_idx = BITMAP_INNER_IDX(frame_num);
     frame_bitmap[outer_idx] |= (1 << inner_idx);
+
+    cli_pop();
 }
 
 /** Clear a frame as free. */
 static inline void
 frame_bitmap_clear(uint32_t frame_num)
 {
+    cli_push();
+
     size_t outer_idx = BITMAP_OUTER_IDX(frame_num);
     size_t inner_idx = BITMAP_INNER_IDX(frame_num);
     frame_bitmap[outer_idx] &= ~(1 << inner_idx);
+
+    cli_pop();
 }
 
 /** Returns true if a frame is in use, otherwise false. */
 static inline bool
 frame_bitmap_check(uint32_t frame_num)
 {
+    cli_push();
+
     size_t outer_idx = BITMAP_OUTER_IDX(frame_num);
     size_t inner_idx = BITMAP_INNER_IDX(frame_num);
-    return frame_bitmap[outer_idx] & (1 << inner_idx);
+    bool result = frame_bitmap[outer_idx] & (1 << inner_idx);
+
+    cli_pop();
+
+    return result;
 }
 
 /**
@@ -98,6 +113,8 @@ frame_bitmap_check(uint32_t frame_num)
 static uint32_t
 frame_bitmap_alloc(void)
 {
+    cli_push();
+
     for (size_t i = 0; i < (NUM_FRAMES / 32); ++i) {
         if (frame_bitmap[i] == 0xFFFFFFFF)
             continue;
@@ -106,11 +123,14 @@ frame_bitmap_alloc(void)
                 /** Found a free frame. */
                 uint32_t frame_num = i * 32 + j;
                 frame_bitmap_set(frame_num);
+
+                cli_pop();
                 return i * 32 + j;
             }
         }
     }
 
+    cli_pop();
     return NUM_FRAMES;
 }
 
@@ -342,7 +362,10 @@ paging_switch_pgdir(pde_t *pgdir)
 }
 
 
-/** Page fault (ISR # 14) handler. */
+/**
+ * Page fault (ISR # 14) handler.
+ * Interrupts should have been disabled since this is an interrupt gate.
+ */
 static void
 page_fault_handler(interrupt_state_t *state)
 {

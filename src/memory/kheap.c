@@ -13,6 +13,7 @@
 #include "../common/printf.h"
 #include "../common/string.h"
 #include "../common/debug.h"
+#include "../common/intstate.h"
 
 
 static uint32_t kheap_btm;
@@ -49,8 +50,11 @@ _print_free_list_state(void)
 uint32_t
 kalloc(size_t size)
 {
+    cli_push();
+
     if (free_list_length == 0) {
         warn("kalloc: kernel flexible heap all used up");
+        cli_pop();
         return 0;
     }
 
@@ -118,12 +122,14 @@ kalloc(size_t size)
         uint32_t object = HEADER_TO_OBJECT((uint32_t) header_curr);
 
         // _print_free_list_state();
+        cli_pop();
         return object;
 
     } while (header_curr != header_begin);
 
     /** No free chunk is large enough, time to panic. */
     warn("kalloc: no free chunk large enough for size %d\n", size);
+    cli_pop();
     return 0;
 }
 
@@ -150,6 +156,8 @@ kfree(void *addr)
     /** Fill with zero bytes to catch dangling pointers use. */
     header->free = true;
     memset((char *) addr, 0, header->size);
+
+    cli_push();
 
     /**
      * Special case of empty free-list (all bytes exactly allocated before
@@ -238,6 +246,7 @@ kfree(void *addr)
     }
 
     // _print_free_list_state();
+    cli_pop();
 }
 
 

@@ -12,6 +12,7 @@
 #include "../common/port.h"
 #include "../common/printf.h"
 #include "../common/debug.h"
+#include "../common/intstate.h"
 
 #include "../interrupt/isr.h"
 
@@ -25,7 +26,8 @@ uint32_t timer_tick = 0;
 
 /**
  * Timer interrupt handler registered for IRQ # 0.
- * Currently just prints a tick message.
+ * Mostly borrowed from xv6's `trap()` code. Interrupts should have been
+ * disabled automatically since this is an interrupt gate.
  */
 static void
 timer_interrupt_handler(interrupt_state_t *state)
@@ -58,12 +60,15 @@ timer_interrupt_handler(interrupt_state_t *state)
         process_exit();
 
     /**
-     * If in was in user-space execution and the process is in RUNNING
-     * state, yield to the scheduler to force a new scheduling decision.
+     * If we are in a process and the process is in RUNNING state, yield
+     * to the scheduler to force a new scheduling decision. Could happen
+     * to a provess in kernel context (during a syscall) as well.
      */
     if (proc != NULL && proc->state == RUNNING) {
+        cli_push();     /** Needed to satisfy the yield invariant. */
         proc->state = READY;
         yield_to_scheduler();
+        cli_pop();
     }
 
     /** Re-check if we get killed since the yield. */

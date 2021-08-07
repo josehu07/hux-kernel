@@ -17,13 +17,13 @@
 
 /** Externed from ASM `syscall.s`. */
 extern int8_t getpid();
-extern int8_t fork();
+extern int8_t fork(uint8_t timeslice);
 extern void exit();
 extern int8_t sleep(uint32_t millisecs);
 extern int8_t wait();
 extern int8_t kill(int8_t pid);
-extern void tprint(vga_color_t color, char *str);
 extern int32_t uptime();
+extern void tprint(vga_color_t color, char *str);
 extern int32_t kbdstr();
 extern int8_t setheap(uint32_t new_top);
 

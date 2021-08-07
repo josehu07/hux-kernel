@@ -74,6 +74,7 @@ struct process {
     struct process *parent;         /** Parent process. */
     uint32_t target_tick;           /** Target wake up timer tick. */
     bool killed;                    /** True if should exit. */
+    uint8_t timeslice;              /** Timeslice length for scheduling. */
     // ... (TODO)
 };
 typedef struct process process_t;
@@ -90,7 +91,7 @@ void initproc_init();
 void process_block(process_block_on_t reason);
 void process_unblock(process_t *proc);
 
-int8_t process_fork();
+int8_t process_fork(uint8_t timeslice);
 void process_exit();
 void process_sleep(uint32_t sleep_ticks);
 int8_t process_wait();

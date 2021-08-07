@@ -7,6 +7,8 @@
 #define DEBUG_H
 
 
+#include <stdbool.h>
+
 #include "printf.h"
 
 #include "../display/vga.h"
@@ -39,6 +41,7 @@ void stack_trace();
 /** Assertion macro. */
 #define assert(condition)   do {                                              \
                                 if (!(condition)) {                           \
+                                    printing_in_cli_pop = true;               \
                                     panic("assertion failed @ function '%s'," \
                                           " file '%s': line %d",              \
                                           __FUNCTION__, __FILE__, __LINE__);  \
@@ -57,16 +60,16 @@ void stack_trace();
 
 
 /** Warning prompting macro. */
-#define warn(fmt, args...)  do {                                               \
-                                 cprintf(VGA_COLOR_MAGENTA, "WARN: " fmt "\n", \
-                                         ##args);                              \
+#define warn(fmt, args...)  do {                                              \
+                                cprintf(VGA_COLOR_MAGENTA, "WARN: " fmt "\n", \
+                                        ##args);                              \
                             } while (0)
 
 
 /** Info prompting macro. */
-#define info(fmt, args...)  do {                                            \
-                                 cprintf(VGA_COLOR_CYAN, "INFO: " fmt "\n", \
-                                         ##args);                           \
+#define info(fmt, args...)  do {                                           \
+                                cprintf(VGA_COLOR_CYAN, "INFO: " fmt "\n", \
+                                        ##args);                           \
                             } while (0)
 
 

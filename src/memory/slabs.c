@@ -11,6 +11,7 @@
 
 #include "../common/debug.h"
 #include "../common/string.h"
+#include "../common/intstate.h"
 
 
 /** Page-granularity SLAB free-list. */
@@ -34,15 +35,20 @@ _salloc_internal(slab_node_t **freelist)
         return 0;
     }
 
+    cli_push();
+
     slab_node_t *node = *freelist;
 
     /** No slab is free, time to panic. */
     if (node == NULL) {
         warn("salloc: free-list %p has no free slabs", freelist);
+        cli_pop();
         return 0;
     }
 
     *freelist = node->next;
+    
+    cli_pop();
     return (uint32_t) node;
 }
 
@@ -61,11 +67,15 @@ salloc_page(void)
 static void
 _sfree_internal(slab_node_t **freelist, void *addr)
 {
+    cli_push();
+
     slab_node_t *node = (slab_node_t *) addr;
 
     /** Simply insert to the head of free-list. */
     node->next = *freelist;
     *freelist = node;
+
+    cli_pop();
 }
 
 /** Wrapper for different granularities. */

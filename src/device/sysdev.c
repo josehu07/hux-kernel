@@ -10,6 +10,8 @@
 #include "timer.h"
 #include "keyboard.h"
 
+#include "../common/intstate.h"
+
 #include "../interrupt/syscall.h"
 
 
@@ -17,7 +19,11 @@
 int32_t
 syscall_uptime(void)
 {
-    return (int32_t) (timer_tick * 1000 / TIMER_FREQ_HZ);
+    cli_push();
+    uint32_t curr_tick = timer_tick;
+    cli_pop();
+
+    return (int32_t) (curr_tick * 1000 / TIMER_FREQ_HZ);
 }
 
 /** int32_t kbdstr(char *buf, int32_t len); */

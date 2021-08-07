@@ -12,6 +12,7 @@
 
 #include "../common/debug.h"
 #include "../common/string.h"
+#include "../common/intstate.h"
 
 #include "../device/timer.h"
 
@@ -36,6 +37,18 @@ extern void return_from_trap(void);
 
 
 /**
+ * Any new process "returns" to here, which in turn returns to the
+ * return-from-trap part of `isr_handler_stub`, entering user mode
+ * execution.
+ */
+static void
+_new_process_entry(void)
+{
+    /** Pop the `cli` pushed in the scheduler. */
+    cli_pop();
+}
+
+/**
  * Find an UNUSED slot in the ptable and put it into INITIAL state. If
  * all slots are in use, return NULL.
  */
@@ -44,6 +57,8 @@ _alloc_new_process(void)
 {
     process_t *proc;
     bool found = false;
+
+    cli_push();
 
     for (proc = ptable; proc < &ptable[MAX_PROCS]; ++proc) {
         if (proc->state == UNUSED) {
@@ -54,8 +69,17 @@ _alloc_new_process(void)
 
     if (!found) {
         warn("new_process: process table is full, no free slot");
+        cli_pop();
         return NULL;
     }
+
+    /** Make proper setups for the new process. */
+    proc->state = INITIAL;
+    proc->block_on = NOTHING;
+    proc->pid = next_pid++;
+    proc->target_tick = 0;
+
+    cli_pop();
 
     /** Allocate kernel stack. */
     proc->kstack = salloc_page();
@@ -65,27 +89,26 @@ _alloc_new_process(void)
     }
     uint32_t sp = proc->kstack + KSTACK_SIZE;
 
-    /** Make proper setups for the new process. */
-    proc->state = INITIAL;
-    proc->block_on = NOTHING;
-    proc->pid = next_pid++;
-    proc->target_tick = 0;
-
     /**
      * Leave room for the trap state. The initial context will be pushed
      * right below this trap state, with return address EIP pointing to
-     * `trapret` (the return-from-trap part of `isr_handler_stub`). In this
-     * way, the new process, after context switched to by the scheduler,
-     * automatically jumps into user mode execution. 
+     * `_new_process_entry()` which returns to the return-from-trap part
+     * of `isr_handler_stub`.
+     * 
+     * In this way, the new process, after context switched to by the
+     * scheduler, automatically jumps into user mode execution.
      */
     sp -= sizeof(interrupt_state_t);
     proc->trap_state = (interrupt_state_t *) sp;
     memset(proc->trap_state, 0, sizeof(interrupt_state_t));
 
+    sp -= sizeof(uint32_t);
+    *(uint32_t *) sp = (uint32_t) return_from_trap;
+
     sp -= sizeof(process_context_t);
     proc->context = (process_context_t *) sp;
     memset(proc->context, 0, sizeof(process_context_t));
-    proc->context->eip = (uint32_t) return_from_trap;
+    proc->context->eip = (uint32_t) _new_process_entry;
 
     return proc;
 }
@@ -181,21 +204,32 @@ initproc_init(void)
     proc->stack_low = vaddr_top;
     proc->heap_high = HEAP_BASE;
 
+    proc->timeslice = 1;
+
     /** Set process state to READY so the scheduler can pick it up. */
     initproc = proc;
     proc->killed = false;
+
+    cli_push();     /** Needed because the assignment might not be atomic. */
     proc->state = READY;
+    cli_pop();
 }
 
 
 /**
  * Fork a new process that is a duplicate of the caller process. Caller
- * is the parent process and the new one is the child process. Returns
- * child pid in parent, 0 in child, and -1 if failed, just like UNIX fork().
+ * is the parent process and the new one is the child process. Scheduling
+ * timeslice length of the new process must be an integer in [1, 16].
+ * 
+ * Returns child pid in parent, 0 in child, and -1 if failed, just like
+ * UNIX fork().
  */
 int8_t
-process_fork(void)
+process_fork(uint8_t timeslice)
 {
+    if (timeslice < 1 || timeslice > 16)
+        return -1;
+
     process_t *parent = running_proc();
 
     /** Get a slot in the ptable. */
@@ -247,6 +281,8 @@ process_fork(void)
     child->stack_low = parent->stack_low;
     child->heap_high = parent->heap_high;
 
+    child->timeslice = timeslice;
+
     /**
      * Copy the trap state of parent to the child. Child should resume
      * execution at the same where place where parent is at right after
@@ -262,7 +298,10 @@ process_fork(void)
     int8_t child_pid = child->pid;
 
     child->killed = false;
+
+    cli_push();     /** Needed because the assignment might not be atomic. */
     child->state = READY;
+    cli_pop();
 
     return child_pid;               /** Returns child pid in parent. */
 }
@@ -274,10 +313,15 @@ process_block(process_block_on_t reason)
 {
     process_t *proc = running_proc();
 
+    cli_push();
+
     proc->block_on = reason;
     proc->state = BLOCKED;
 
+    /** Must yield with `cli` pushed. */
     yield_to_scheduler();
+
+    cli_pop();
 }
 
 /** Unblock a process by setting it to READY state and clear the reason. */
@@ -285,7 +329,10 @@ inline void
 process_unblock(process_t *proc)
 {
     proc->block_on = NOTHING;
+
+    cli_push();     /** Needed because the assignment might not be atomic. */
     proc->state = READY;
+    cli_pop();
 }
 
 
@@ -295,6 +342,8 @@ process_exit(void)
 {
     process_t *proc = running_proc();
     assert(proc != initproc);
+
+    cli_push();
 
     /** Parent might be blocking due to waiting. */
     if (proc->parent->state == BLOCKED && proc->parent->block_on == ON_WAIT)
@@ -332,7 +381,11 @@ process_sleep(uint32_t sleep_ticks)
 {
     process_t *proc = running_proc();
 
-    uint32_t target_tick = timer_tick + sleep_ticks;
+    cli_push();
+    uint32_t curr_tick = timer_tick;
+    cli_pop();
+
+    uint32_t target_tick = curr_tick + sleep_ticks;
     proc->target_tick = target_tick;
 
     process_block(ON_SLEEP);
@@ -355,6 +408,8 @@ process_wait(void)
 {
     process_t *proc = running_proc();
     uint32_t child_pid;
+
+    cli_push();
 
     while (1) {
         bool have_kids = false;
@@ -381,13 +436,16 @@ process_wait(void)
                 child->name[0] = '\0';
                 child->state = UNUSED;
 
+                cli_pop();
                 return child_pid;
             }
         }
 
         /** Dont' have children. */
-        if (!have_kids || proc->killed)
+        if (!have_kids || proc->killed) {
+            cli_pop();
             return -1;
+        }
 
         /**
          * Otherwise, some child process is still running. Block until
@@ -404,6 +462,8 @@ process_wait(void)
 int8_t
 process_kill(int8_t pid)
 {
+    cli_push();
+
     for (process_t *proc = ptable; proc < &ptable[MAX_PROCS]; ++proc) {
         if (proc->pid == pid) {
             proc->killed = true;
@@ -412,9 +472,11 @@ process_kill(int8_t pid)
             if (proc->state == BLOCKED)
                 process_unblock(proc);
 
+            cli_pop();
             return 0;
         }
     }
 
+    cli_pop();
     return -1;
 }

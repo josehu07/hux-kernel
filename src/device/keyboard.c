@@ -12,6 +12,7 @@
 #include "../common/printf.h"
 #include "../common/debug.h"
 #include "../common/string.h"
+#include "../common/intstate.h"
 
 #include "../display/vga.h"
 #include "../display/terminal.h"
@@ -504,7 +505,8 @@ static process_t *listener_proc = NULL;
 
 /**
  * Keyboard interrupt handler registered for IRQ #1.
- * Serves keyboard input requests.
+ * Serves keyboard input requests. Interrupts should have been disabled
+ * automatically since this is an interrupt gate.
  */
 static void
 keyboard_interrupt_handler(interrupt_state_t *state)
@@ -589,17 +591,27 @@ keyboard_init()
  * Currently only supports lower cased ASCII characters and newline. Assumes
  * at most one process could be listening on keyboard input at the same time.
  */
-size_t
+int32_t
 keyboard_getstr(char *buf, size_t len)
 {
     assert(buf != NULL);
     assert(len > 0);
 
+    cli_push();
+
+    if (listener_proc != NULL) {
+        warn("keyboard_getstr: there is already a keyboard listener");
+        cli_pop();
+        return -1;
+    }
+
     process_t *proc = running_proc();
-    size_t left = len;
+    listener_proc = proc;
+
+    cli_pop();
     
     input_get_loc = input_put_loc;
-    listener_proc = proc;
+    size_t left = len;
 
     while (left > 1) {
         /** Wait until there are unhandled chars. */
@@ -623,7 +635,9 @@ keyboard_getstr(char *buf, size_t len)
     buf[fetched] = '\0';
 
     /** Clear the listener. */
+    cli_push();
     listener_proc = NULL;
+    cli_pop();
 
     return fetched;
 }

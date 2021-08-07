@@ -95,8 +95,8 @@ Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kerne
 - [x] Process user mode execution
 - [x] Essential system calls
 - [ ] Time-sharing scheduler
-- [ ] Very simple file system
 - [ ] Basic IDE disk driver
+- [ ] Very simple file system
 - [ ] Multi-threading concurrency
 - [ ] Synchronization primitives
 - [ ] Summary of current flaws

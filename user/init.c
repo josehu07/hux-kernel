@@ -20,30 +20,6 @@ _fake_halt(void)
 }
 
 
-/** A fancy counting-down animation to make booting look better. */
-static inline void
-_count_down_message(void)
-{
-    printf("\nBooting finished! Kicking off in -->>   [   ]\b\b\b\b");
-    sleep(200);
-
-    cprintf(VGA_COLOR_RED,         "*");
-    printf("  ]  ( )\b\b");
-    cprintf(VGA_COLOR_WHITE, "3\b\b\b\b\b\b\b");
-    sleep(1000);
-
-    cprintf(VGA_COLOR_LIGHT_BROWN, "*");
-    printf(" ]  ( )\b\b");
-    cprintf(VGA_COLOR_WHITE, "2\b\b\b\b\b\b");
-    sleep(1000);
-
-    cprintf(VGA_COLOR_GREEN,       "*");
-    printf("]  ( )\b\b");
-    cprintf(VGA_COLOR_WHITE, "1\n");
-    sleep(1000);
-}
-
-
 /** An even fancier welcome logo in ASCII. */
 static void
 _shell_welcome_logo(void)
@@ -154,6 +130,31 @@ _shell_temp_main(void)
 }
 
 
+/** A fancy counting-down animation to make booting look better. */
+static inline void
+_count_down_message(void)
+{
+    printf("\nBooting finished! Kicking off in -->>   [   ]\b\b\b\b");
+    sleep(200);
+
+    cprintf(VGA_COLOR_RED,         "*");
+    printf("  ]  ( )\b\b");
+    cprintf(VGA_COLOR_WHITE, "3\b\b\b\b\b\b\b");
+    sleep(1000);
+
+    cprintf(VGA_COLOR_LIGHT_BROWN, "*");
+    printf(" ]  ( )\b\b");
+    cprintf(VGA_COLOR_WHITE, "2\b\b\b\b\b\b");
+    sleep(1000);
+
+    cprintf(VGA_COLOR_GREEN,       "*");
+    printf("]  ( )\b\b");
+    cprintf(VGA_COLOR_WHITE, "1\b");
+    sleep(1000);
+
+    cprintf(VGA_COLOR_WHITE, "0\n");
+}
+
 void
 main(void)
 {
@@ -162,7 +163,7 @@ main(void)
     while (1) {
         info("init: starting the shell process...");
 
-        int8_t shell_pid = fork();
+        int8_t shell_pid = fork(0);
         if (shell_pid < 0) {
             panic("init: failed to fork a child process");
             exit();

@@ -12,6 +12,7 @@
 #include "../common/string.h"
 #include "../common/port.h"
 #include "../common/debug.h"
+#include "../common/intstate.h"
 
 
 static uint16_t * const VGA_MEMORY = (uint16_t *) 0xB8000;
@@ -143,9 +144,13 @@ terminal_write(const char *data, size_t size)
 void
 terminal_write_color(const char *data, size_t size, vga_color_t fg)
 {
+    cli_push();
+
     for (size_t i = 0; i < size; ++i)
         _putchar_color(data[i], fg);
     _update_cursor();
+
+    cli_pop();
 }
 
 
@@ -153,6 +158,8 @@ terminal_write_color(const char *data, size_t size, vga_color_t fg)
 void
 terminal_erase(void)
 {
+    cli_push();
+
     if (terminal_col > 0)
         terminal_col--;
     else if (terminal_row > 0) {
@@ -165,6 +172,8 @@ terminal_erase(void)
                                   TERMINAL_DEFAULT_COLOR_FG, ' ');
 
     _update_cursor();
+
+    cli_pop();
 }
 
 
@@ -172,6 +181,8 @@ terminal_erase(void)
 void
 terminal_clear(void)
 {
+    cli_push();
+
     for (size_t y = 0; y < VGA_HEIGHT; ++y) {
         for (size_t x = 0; x < VGA_WIDTH; ++x) {
             size_t idx = y * VGA_WIDTH + x;
@@ -179,4 +190,6 @@ terminal_clear(void)
                                           TERMINAL_DEFAULT_COLOR_FG, ' ');
         }
     }
+
+    cli_pop();
 }

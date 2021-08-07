@@ -14,7 +14,16 @@
 #include "types.h"
 #include "string.h"
 
+#include "../common/intstate.h"
+
 #include "../display/terminal.h"
+
+
+/**
+ * Turn off `cli` pushing/popping for terminal printing on assertion failures,
+ * because assertions are used in `cli_pop()` itself.
+ */
+bool printing_in_cli_pop = false;
 
 
 /** Internal format specifier flags. */
@@ -896,7 +905,11 @@ printf(const char *fmt, ...)
 {
     va_list va;
     va_start(va, fmt);
+
+    cli_push();
     _vprintf(TERMINAL_DEFAULT_COLOR_FG, fmt, va);
+    cli_pop();
+    
     va_end(va);
 }
 
@@ -906,7 +919,11 @@ cprintf(vga_color_t fg, const char *fmt, ...)
 {
     va_list va;
     va_start(va, fmt);
+
+    cli_push();
     _vprintf(fg, fmt, va);
+    cli_pop();
+    
     va_end(va);
 }
 
