@@ -46,6 +46,15 @@ _new_process_entry(void)
 {
     /** Pop the `cli` pushed in the scheduler. */
     cli_pop();
+
+    /**
+     * The trap state on kernel stack, which will get popped, has EFLAGS
+     * register value of 0x202 which means interrupts will be enabled once
+     * enters user mode execution. See `yield_to_scheduler()` in
+     * `scheduler.c` for more.
+     */
+    char a;
+    info("entry: %b, %8x, %p, %p", interrupt_enabled(), running_proc()->trap_state->eflags, running_proc()->trap_state, &a);
 }
 
 /**
@@ -85,6 +94,8 @@ _alloc_new_process(void)
     proc->kstack = salloc_page();
     if (proc->kstack == 0) {
         warn("new_process: failed to allocate kernel stack page");
+        proc->state = UNUSED;
+        proc->pid = 0;
         return NULL;
     }
     uint32_t sp = proc->kstack + KSTACK_SIZE;
@@ -197,7 +208,7 @@ initproc_init(void)
     proc->trap_state->cs = (SEGMENT_UCODE << 3) | 0x3;  /** DPL_USER. */
     proc->trap_state->ds = (SEGMENT_UDATA << 3) | 0x3;  /** DPL_USER. */
     proc->trap_state->ss = proc->trap_state->ds;
-    proc->trap_state->eflags = 0x00000200;      /** Interrupt enable. */
+    proc->trap_state->eflags = 0x00000202;      /** Interrupt enable. */
     proc->trap_state->esp = USER_MAX - 4;   /** GCC might push an FP. */
     proc->trap_state->eip = USER_BASE;   /** Beginning of ELF binary. */
 
@@ -258,7 +269,17 @@ process_fork(uint8_t timeslice)
     uint32_t vaddr_btm = 0;     /** Kernel-mapped. */
     while (vaddr_btm < PHYS_MAX) {
         pte_t *pte = paging_walk_pgdir(child->pgdir, vaddr_btm, true, false);
-        assert(pte != NULL);
+        if (pte == NULL) {
+            warn("fork: cannot allocate level-2 table, out of kheap memory?");
+            paging_unmap_range(child->pgdir, 0, vaddr_btm);
+            paging_destroy_pgdir(child->pgdir);
+            child->pgdir = NULL;
+            sfree_page((char *) child->kstack);
+            child->kstack = 0;
+            child->pid = 0;
+            child->state = UNUSED;
+            return -1;
+        }
         paging_map_kpage(pte, vaddr_btm);
 
         vaddr_btm += PAGE_SIZE;
@@ -269,7 +290,8 @@ process_fork(uint8_t timeslice)
         || !paging_copy_range(child->pgdir, parent->pgdir,
                               parent->stack_low, USER_MAX)) {
         warn("fork: failed to copy parent memory state over to child");
-        sfree_page(child->pgdir);
+        paging_unmap_range(child->pgdir, 0, vaddr_btm);
+        paging_destroy_pgdir(child->pgdir);
         child->pgdir = NULL;
         sfree_page((char *) child->kstack);
         child->kstack = 0;
@@ -307,21 +329,20 @@ process_fork(uint8_t timeslice)
 }
 
 
-/** Block the running process on the given reason. */
+/**
+ * Block the running process on the given reason.
+ * Must be called with `cli` pushed.
+ */
 inline void
 process_block(process_block_on_t reason)
 {
     process_t *proc = running_proc();
-
-    cli_push();
 
     proc->block_on = reason;
     proc->state = BLOCKED;
 
     /** Must yield with `cli` pushed. */
     yield_to_scheduler();
-
-    cli_pop();
 }
 
 /** Unblock a process by setting it to READY state and clear the reason. */
@@ -382,13 +403,15 @@ process_sleep(uint32_t sleep_ticks)
     process_t *proc = running_proc();
 
     cli_push();
+    
     uint32_t curr_tick = timer_tick;
-    cli_pop();
 
     uint32_t target_tick = curr_tick + sleep_ticks;
     proc->target_tick = target_tick;
 
     process_block(ON_SLEEP);
+
+    cli_pop();
 
     /** Could be re-scheduled only if `timer_tick` passed `target_tick`. */
 }

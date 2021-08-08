@@ -12,7 +12,7 @@
 
 
 /** Timer interrupt frequency in Hz. */
-#define TIMER_FREQ_HZ 100
+#define TIMER_FREQ_HZ 20
 
 
 /** Extern the global timer ticks value to the scheduler. */

@@ -128,8 +128,9 @@ terminal_init(void)
     terminal_buf = VGA_MEMORY;
     terminal_row = 0;
     terminal_col = 0;
-    terminal_clear();
+
     _enable_cursor();
+    terminal_clear();
 }
 
 
@@ -190,6 +191,10 @@ terminal_clear(void)
                                           TERMINAL_DEFAULT_COLOR_FG, ' ');
         }
     }
+
+    terminal_row = 0;
+    terminal_col = 0;
+    _update_cursor();
 
     cli_pop();
 }

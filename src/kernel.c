@@ -122,8 +122,8 @@ kernel_main(unsigned long magic, unsigned long addr)
      * process which is `init` and context switch to it, then never
      * switching back.
      */
+    terminal_clear();
     scheduler();
 
-    while (1)   // CPU idles with a `hlt` loop.
-        asm volatile ( "hlt" );
+    error("CPU leaves the scheduler loop, should not happen");
 }

@@ -536,6 +536,9 @@ keyboard_interrupt_handler(interrupt_state_t *state)
             event = extendcode_event_map[extendcode];
     }
 
+    // if (event.press && event.ascii)
+    //     printf("%c", event.info.codel);
+
     /**
      * React only if no overwriting could happen and if a process is
      * listening on keyboard input. Record the char to the circular buffer,
@@ -636,9 +639,7 @@ keyboard_getstr(char *buf, size_t len)
                 return -1;
             }
 
-            cli_pop();
             process_block(ON_KBDIN);
-            cli_push();
         }
 
         /** Fetch the next unhandled char. */

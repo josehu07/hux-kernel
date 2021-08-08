@@ -25,20 +25,51 @@ static void
 _shell_welcome_logo(void)
 {
     cprintf(VGA_COLOR_LIGHT_BLUE,
-            "\n\n"
-            "                /--/   /--/                                  \n"
-            "               /  /   /  /                                   \n"
-            "Welcome to    /  /---/  /     /--/   /--/     /--/   /--/   !\n"
-            "             /  /---/  /     /  /   /  /       | |-/ /       \n"
-            "            /  /   /  /     /  /---/  /       / /-| |        \n"
-            "           /--/   /--/     /---------/     /--/   |--|       \n"
+            "\n"
+            "                /--/   /--/                                    \n"
+            "               /  /   /  /                                     \n"
+            "Welcome to    /  /---/  /     /--/   /--/     /--/   /--/   OS!\n"
+            "             /  /---/  /     /  /   /  /       | |-/ /         \n"
+            "            /  /   /  /     /  /---/  /       / /-| |          \n"
+            "           /--/   /--/     /---------/     /--/   |--|         \n"
             "\n");
+}
+
+static void
+_test_child(void)
+{
+    int32_t res = 0;
+    for (int32_t i = 12345; i < 57896; ++i)
+        for (int32_t j = i; j > 12345; --j)
+            res += (i * j) % 567;
+    printf("res %d: %d\n", getpid(), res);
 }
 
 static void
 _shell_temp_main(void)
 {
     _shell_welcome_logo();
+
+    sleep(100);
+    int8_t i;
+    for (i = 1; i <= 3; ++i) {
+        printf("parent: forking child %d\n", i);
+        int8_t pid = fork(i*4);
+        if (pid < 0) {
+            error("test: forking child %d failed", i);
+        }
+        if (pid == 0) {
+            // Child.
+            _test_child();
+            exit();
+        } else
+            printf("parent: forked child %d\n", i);
+    }
+    printf("parent: waiting...\n");
+    for (i = 1; i <= 3; ++i) {
+        int8_t pid = wait();
+        printf("parent: waited child %d\n", pid);
+    }
 
     char cmd_buf[128];
     memset(cmd_buf, 0, 128);
@@ -131,58 +162,55 @@ _shell_temp_main(void)
 
 
 /** A fancy counting-down animation to make booting look better. */
-static inline void
-_count_down_message(void)
-{
-    printf("\nBooting finished! Kicking off in -->>   [   ]\b\b\b\b");
-    sleep(200);
+// static inline void
+// _count_down_message(void)
+// {
+//     printf("\nBooting finished! Kicking off in -->>   [   ]\b\b\b\b");
+//     sleep(200);
 
-    cprintf(VGA_COLOR_RED,         "*");
-    printf("  ]  ( )\b\b");
-    cprintf(VGA_COLOR_WHITE, "3\b\b\b\b\b\b\b");
-    sleep(1000);
+//     cprintf(VGA_COLOR_RED,         "*");
+//     printf("  ]  ( )\b\b");
+//     cprintf(VGA_COLOR_WHITE, "3\b\b\b\b\b\b\b");
+//     sleep(1000);
 
-    cprintf(VGA_COLOR_LIGHT_BROWN, "*");
-    printf(" ]  ( )\b\b");
-    cprintf(VGA_COLOR_WHITE, "2\b\b\b\b\b\b");
-    sleep(1000);
+//     cprintf(VGA_COLOR_LIGHT_BROWN, "*");
+//     printf(" ]  ( )\b\b");
+//     cprintf(VGA_COLOR_WHITE, "2\b\b\b\b\b\b");
+//     sleep(1000);
 
-    cprintf(VGA_COLOR_GREEN,       "*");
-    printf("]  ( )\b\b");
-    cprintf(VGA_COLOR_WHITE, "1\b");
-    sleep(1000);
+//     cprintf(VGA_COLOR_GREEN,       "*");
+//     printf("]  ( )\b\b");
+//     cprintf(VGA_COLOR_WHITE, "1\b");
+//     sleep(1000);
 
-    cprintf(VGA_COLOR_WHITE, "0\n");
-}
+//     cprintf(VGA_COLOR_WHITE, "0\n");
+// }
 
 void
 main(void)
 {
-    _count_down_message();
+    // _count_down_message();
+    // info("init: starting the shell process...");
 
-    while (1) {
-        info("init: starting the shell process...");
-
-        int8_t shell_pid = fork(0);
-        if (shell_pid < 0) {
-            panic("init: failed to fork a child process");
-            exit();
-        }
-
-        if (shell_pid == 0) {
-            // Child.
-            _shell_temp_main();
-            _fake_halt();
-        } else {
-            // Parent.
-            int8_t wait_pid;
-            do {
-                wait_pid = wait();
-                if (wait_pid > 0 && wait_pid != shell_pid)
-                    warn("init: caught zombie process %d", wait_pid);
-            } while (wait_pid > 0 && wait_pid != shell_pid);
-        }
+    int8_t shell_pid = fork(0);
+    if (shell_pid < 0) {
+        error("init: failed to fork a child process");
+        exit();
     }
 
-    exit();
+    if (shell_pid == 0) {
+        // Child.
+        _shell_temp_main();
+        _fake_halt();
+    } else {
+        // Parent.
+        int8_t wait_pid;
+        do {
+            wait_pid = wait();
+            if (wait_pid > 0 && wait_pid != shell_pid)
+                warn("init: caught zombie process %d", wait_pid);
+        } while (wait_pid > 0 && wait_pid != shell_pid);
+    }
+
+    error("init: the shell process exits, should not happen");
 }

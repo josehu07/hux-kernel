@@ -15,7 +15,7 @@
 #define PAGE_SIZE 4096
 
 #define USER_BASE 0x20000000
-#define HEAP_BASE (USER_BASE + 0x01000000)
+#define HEAP_BASE (USER_BASE + 0x00100000)
 
 #define ADDR_PAGE_OFFSET(addr) ((addr) & 0x00000FFF)
 #define ADDR_PAGE_NUMBER(addr) ((addr) >> 12)

@@ -253,7 +253,7 @@ paging_map_kpage(pte_t *pte, uint32_t paddr)
 
 /**
  * Unmap all the mapped pages within a virtual address range in a user
- * page directory. Avoids calling `wake_pgdir()` repeatedly.
+ * page directory. Avoids calling `walk_pgdir()` repeatedly.
  */
 void
 paging_unmap_range(pde_t *pgdir, uint32_t va_start, uint32_t va_end)

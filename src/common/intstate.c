@@ -22,12 +22,12 @@ interrupt_enabled(void)
 
 
 /** Disable interrupts if not yet so. */
-inline void
+void
 cli_push(void)
 {
     bool was_enabled = interrupt_enabled();
-
-    asm volatile ( "cli" );
+    if (was_enabled)
+        asm volatile ( "cli" );
 
     /**
      * If cli stack previously empty, remember the previous interrupt
@@ -35,7 +35,6 @@ cli_push(void)
      */
     if (cpu_state.cli_depth == 0)
         cpu_state.int_enabled = was_enabled;
-
     cpu_state.cli_depth++;
 }
 
@@ -43,7 +42,7 @@ cli_push(void)
  * Restore interrupt e/d state to previous state if all `cli`s have been
  * popped. Must be one-one mapped to `cli_push()` in code.
  */
-inline void
+void
 cli_pop(void)
 {
     assert(!interrupt_enabled());

@@ -8,7 +8,7 @@
  *     bottom-most pages (`0x00000000` to `0x20000000`)
  *     
  *   - The ELF binary (`.text` + `.data` + `.bss` sections) starts from
- *     `0x20000000` (and takes the size of ELF binary)
+ *     `0x20000000` (and takes the size of at most 1MiB)
  *     
  *   - The stack begins at the top-most page (`0x40000000`), grows downwards
  *   
@@ -31,13 +31,13 @@
 #define USER_BASE 0x20000000
 
 /**
- * Hux allows user executable to take up at most 16MiB space, starting
+ * Hux allows user executable to take up at most 1MiB space, starting
  * at USER_BASE and ending no higher than HEAP_BASE.
  */
-#define HEAP_BASE (USER_BASE + 0x01000000)
+#define HEAP_BASE (USER_BASE + 0x00100000)
 
-/** Max stack size limit is 16MiB. */
-#define STACK_MIN (USER_MAX - 0x01000000)
+/** Max stack size limit is 4MiB. */
+#define STACK_MIN (USER_MAX - 0x00400000)
 
 
 #endif
