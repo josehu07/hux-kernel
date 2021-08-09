@@ -580,10 +580,7 @@ keyboard_interrupt_handler(interrupt_state_t *state)
 }
 
 
-/**
- * Initialize the PIT timer. Registers timer interrupt ISR handler, sets
- * PIT to run in mode 3 with given frequency in Hz.
- */
+/** Initialize the PS/2 keyboard device. */
 void
 keyboard_init()
 {
@@ -597,7 +594,7 @@ keyboard_init()
 
     listener_proc = NULL;
 
-    /** Register timer interrupt ISR handler. */
+    /** Register keybaord interrupt ISR handler. */
     isr_register(INT_NO_KEYBOARD, &keyboard_interrupt_handler);
 }
 

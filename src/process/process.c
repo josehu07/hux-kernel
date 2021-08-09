@@ -80,6 +80,14 @@ _alloc_new_process(void)
         return NULL;
     }
 
+    /** Allocate kernel stack. */
+    proc->kstack = salloc_page();
+    if (proc->kstack == 0) {
+        warn("new_process: failed to allocate kernel stack page");
+        return NULL;
+    }
+    uint32_t sp = proc->kstack + KSTACK_SIZE;
+
     /** Make proper setups for the new process. */
     proc->state = INITIAL;
     proc->block_on = NOTHING;
@@ -87,16 +95,6 @@ _alloc_new_process(void)
     proc->target_tick = 0;
 
     cli_pop();
-
-    /** Allocate kernel stack. */
-    proc->kstack = salloc_page();
-    if (proc->kstack == 0) {
-        warn("new_process: failed to allocate kernel stack page");
-        proc->state = UNUSED;
-        proc->pid = 0;
-        return NULL;
-    }
-    uint32_t sp = proc->kstack + KSTACK_SIZE;
 
     /**
      * Leave room for the trap state. The initial context will be pushed
@@ -256,7 +254,7 @@ process_fork(uint8_t timeslice)
     child->pgdir = (pde_t *) salloc_page();
     if (child->pgdir == NULL) {
         warn("fork: cannot allocate level-1 directory, out of kheap memory?");
-        sfree_page((char *) child->kstack);
+        sfree_page((char *) child->kstack);     // Maybe use goto.
         child->kstack = 0;
         child->pid = 0;
         child->state = UNUSED;
@@ -269,7 +267,7 @@ process_fork(uint8_t timeslice)
         pte_t *pte = paging_walk_pgdir(child->pgdir, vaddr_btm, true, false);
         if (pte == NULL) {
             warn("fork: cannot allocate level-2 table, out of kheap memory?");
-            paging_unmap_range(child->pgdir, 0, vaddr_btm);
+            paging_unmap_range(child->pgdir, 0, vaddr_btm); // Maybe use goto.
             paging_destroy_pgdir(child->pgdir);
             child->pgdir = NULL;
             sfree_page((char *) child->kstack);
@@ -288,7 +286,7 @@ process_fork(uint8_t timeslice)
         || !paging_copy_range(child->pgdir, parent->pgdir,
                               parent->stack_low, USER_MAX)) {
         warn("fork: failed to copy parent memory state over to child");
-        paging_unmap_range(child->pgdir, 0, vaddr_btm);
+        paging_unmap_range(child->pgdir, 0, vaddr_btm);     // Maybe use goto.
         paging_destroy_pgdir(child->pgdir);
         child->pgdir = NULL;
         sfree_page((char *) child->kstack);
@@ -312,12 +310,11 @@ process_fork(uint8_t timeslice)
     child->trap_state->eax = 0;     /** `fork()` returns 0 in child. */
 
     child->parent = parent;
-
     strncpy(child->name, parent->name, sizeof(parent->name));
 
-    int8_t child_pid = child->pid;
-
     child->killed = false;
+
+    int8_t child_pid = child->pid;
 
     cli_push();     /** Needed because the assignment might not be atomic. */
     child->state = READY;

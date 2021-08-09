@@ -171,12 +171,10 @@ terminal_erase(void)
     size_t idx = terminal_row * VGA_WIDTH + terminal_col;
     terminal_buf[idx] = vga_entry(TERMINAL_DEFAULT_COLOR_BG,
                                   TERMINAL_DEFAULT_COLOR_FG, ' ');
-
     _update_cursor();
 
     cli_pop();
 }
-
 
 /** Clear the terminal window by flushing spaces. */
 void

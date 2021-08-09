@@ -11,6 +11,7 @@
 
 
 bool interrupt_enabled(void);
+
 void cli_push(void);
 void cli_pop(void);
 

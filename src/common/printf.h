@@ -22,7 +22,7 @@ void snprintf(char *buf, size_t count, const char *fmt, ...);
 
 
 /** Extern to `debug.h`. */
-extern bool printing_in_cli_pop;
+extern bool printf_to_push_cli;
 
 
 #endif

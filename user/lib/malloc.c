@@ -26,7 +26,8 @@ static size_t free_list_length = 0;
 
 
 /** For debug printing the state of the free-list. */
-__attribute__((unused)) static void
+__attribute__((unused))
+static void
 _print_free_list_state(void)
 {
     fl_header_t *header_curr = bottom_most_header;
@@ -203,7 +204,7 @@ malloc(size_t size)
         header_curr->free = false;
         uint32_t object = HEADER_TO_OBJECT((uint32_t) header_curr);
 
-        _print_free_list_state();
+        // _print_free_list_state();
         return object;
 
     } while (header_curr != header_begin);
@@ -228,12 +229,12 @@ mfree(void *addr)
     fl_header_t *header = (fl_header_t *) OBJECT_TO_HEADER((uint32_t) addr);
 
     if ((uint32_t) addr < uheap_btm || (uint32_t) addr >= uheap_top) {
-        warn("mfree: object %p is out of user heap range", addr);
+        error("mfree: object %p is out of user heap range", addr);
         return;
     }
 
     if (header->magic != UHEAP_MAGIC) {
-        warn("mfree: object %p corrupted its header magic", addr);
+        error("mfree: object %p corrupted its header magic", addr);
         return;
     }
 
@@ -327,5 +328,5 @@ mfree(void *addr)
         }
     }
 
-    _print_free_list_state();
+    // _print_free_list_state();
 }

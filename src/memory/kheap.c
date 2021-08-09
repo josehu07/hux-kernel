@@ -27,7 +27,8 @@ static size_t free_list_length = 1;
 
 
 /** For debug printing the state of the free-list. */
-__attribute__((unused)) static void
+__attribute__((unused))
+static void
 _print_free_list_state(void)
 {
     fl_header_t *header_curr = bottom_most_header;

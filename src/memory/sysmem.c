@@ -12,6 +12,7 @@
 
 #include "../interrupt/syscall.h"
 
+#include "../process/paging.h"
 #include "../process/scheduler.h"
 
 
@@ -45,11 +46,13 @@ syscall_setheap(void)
         pte_t *pte = paging_walk_pgdir(proc->pgdir, vaddr, true, false);
         if (pte == NULL) {
             warn("setheap: cannot walk pgdir, out of kheap memory?");
+            paging_unmap_range(proc->pgdir, heap_page_high, vaddr);
             return SYS_FAIL_RC;
         }
         uint32_t paddr = paging_map_upage(pte, true);
         if (paddr == 0) {
             warn("setheap: cannot map new page, out of memory?");
+            paging_unmap_range(proc->pgdir, heap_page_high, vaddr);
             return SYS_FAIL_RC;
         }
         memset((char *) paddr, 0, PAGE_SIZE);

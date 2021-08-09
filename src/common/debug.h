@@ -41,7 +41,7 @@ void stack_trace();
 /** Assertion macro. */
 #define assert(condition)   do {                                              \
                                 if (!(condition)) {                           \
-                                    printing_in_cli_pop = true;               \
+                                    printf_to_push_cli = false;               \
                                     panic("assertion failed @ function '%s'," \
                                           " file '%s': line %d",              \
                                           __FUNCTION__, __FILE__, __LINE__);  \

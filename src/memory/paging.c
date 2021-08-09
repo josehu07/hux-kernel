@@ -328,6 +328,7 @@ paging_copy_range(pde_t *dstdir, pde_t *srcdir, uint32_t va_start, uint32_t va_e
             dsttab = paging_alloc_pgtab(&dstdir[pde_idx], false);
             if (dsttab == NULL) {
                 warn("copy_range: cannot alloc pgtab, out of kheap memory?");
+                paging_unmap_range(dstdir, va_start, va_end);
                 return false;
             }
         }
@@ -339,6 +340,7 @@ paging_copy_range(pde_t *dstdir, pde_t *srcdir, uint32_t va_start, uint32_t va_e
                                               srctab[pte_idx].writable);
             if (paddr == 0) {
                 warn("copy_range: cannot map page, out of physical memory?");
+                paging_unmap_range(dstdir, va_start, va_end);
                 return false;
             }
 

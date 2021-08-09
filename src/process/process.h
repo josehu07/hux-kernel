@@ -34,7 +34,7 @@ struct process_context {
     uint32_t ebx;
     uint32_t ebp;   /** Frame pointer. */
     uint32_t eip;   /** Instruction pointer (PC). */
-};
+} __attribute__((packed));
 typedef struct process_context process_context_t;
 
 

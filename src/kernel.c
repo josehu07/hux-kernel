@@ -57,10 +57,8 @@ kernel_main(unsigned long magic, unsigned long addr)
     terminal_init();
 
     /** Double check the multiboot magic number. */
-    if (magic != MULTIBOOT_BOOTLOADER_MAGIC) {
+    if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
         error("invalid bootloader magic: %#x", magic);
-        return;
-    }
 
     /** Get pointer to multiboot info. */
     multiboot_info_t *mbi = (multiboot_info_t *) addr;
