@@ -26,8 +26,7 @@ void
 cli_push(void)
 {
     bool was_enabled = interrupt_enabled();
-    if (was_enabled)
-        asm volatile ( "cli" );
+    asm volatile ( "cli" );
 
     /**
      * If cli stack previously empty, remember the previous interrupt

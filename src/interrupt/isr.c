@@ -76,8 +76,10 @@ _missing_handler(interrupt_state_t *state)
 
     if (kernel_context)
         error("isr: missing handler for interrupt # %#x", state->int_no);
-    else
+    else {
+        warn("isr: missing handler for interrupt # %#x", state->int_no);
         process_exit();
+    }
 }
 
 /**
@@ -108,10 +110,18 @@ isr_handler(interrupt_state_t *state)
         /** Call actual ISR if registered. */
         if (isr_table[int_no] == NULL)
             _missing_handler(state);
-        else
+        else {
+            /**
+             * Send back timer interrupt EOI to PIC early because it may
+             * yield in the timer interrupt to the scheduler, leaving
+             * the PIT timer blocked for the next few processes scheduled.
+             */
+            if (state->int_no == INT_NO_TIMER)
+                _pic_send_eoi(irq_no);
             isr_table[int_no](state);
-
-        _pic_send_eoi(irq_no);      /** Send back EOI signal to PIC. */
+            if (state->int_no != INT_NO_TIMER)
+                _pic_send_eoi(irq_no);
+        }
 
     /** Syscall trap. */
     } else if (int_no == INT_NO_SYSCALL) {

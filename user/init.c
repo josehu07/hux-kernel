@@ -36,7 +36,7 @@ _shell_welcome_logo(void)
 }
 
 static void
-_test_child(void)
+_test_child_workload(void)
 {
     int32_t res = 0;
     for (int32_t i = 12345; i < 57896; ++i)
@@ -50,25 +50,25 @@ _shell_temp_main(void)
 {
     _shell_welcome_logo();
 
-    sleep(100);
     int8_t i;
+
+    printf("parent: forking...\n");
     for (i = 1; i <= 3; ++i) {
-        printf("parent: forking child %d\n", i);
         int8_t pid = fork(i*4);
-        if (pid < 0) {
-            error("test: forking child %d failed", i);
-        }
+        if (pid < 0)
+            error("parent: forking child i=%d failed", i);
         if (pid == 0) {
             // Child.
-            _test_child();
+            _test_child_workload();
             exit();
         } else
-            printf("parent: forked child %d\n", i);
+            printf("parent: forked child pid=%d, timeslice=%d\n", pid, i*4);
     }
+
     printf("parent: waiting...\n");
     for (i = 1; i <= 3; ++i) {
         int8_t pid = wait();
-        printf("parent: waited child %d\n", pid);
+        printf("parent: waited child pid=%d\n", pid);
     }
 
     char cmd_buf[128];

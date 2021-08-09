@@ -413,8 +413,8 @@ page_fault_handler(interrupt_state_t *state)
         }
 
         if (vaddr < old_btm) {
-            warn("page_fault: stack growth to %p failed, killing", new_btm);
-            proc->killed = true;
+            warn("page_fault: stack growth to %p failed", new_btm);
+            process_exit();
         } else
             proc->stack_low = new_btm;
 
@@ -428,8 +428,7 @@ page_fault_handler(interrupt_state_t *state)
          "  write:   %d\n"
          "  user:    %d\n"
          "} not handled!", faulty_addr, present, write, user);
-
-    proc->killed = true;
+    process_exit();
 }
 
 

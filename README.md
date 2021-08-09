@@ -94,9 +94,10 @@ Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kerne
 - [x] Heal memory allocators
 - [x] Process user mode execution
 - [x] Essential system calls
-- [ ] Time-sharing scheduler
+- [x] Time-sharing scheduler
 - [ ] Basic IDE disk driver
 - [ ] Very simple file system
+- [ ] Block caching & swapping
 - [ ] Multi-threading concurrency
 - [ ] Synchronization primitives
 - [ ] Summary of current flaws

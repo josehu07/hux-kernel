@@ -53,8 +53,6 @@ _new_process_entry(void)
      * enters user mode execution. See `yield_to_scheduler()` in
      * `scheduler.c` for more.
      */
-    char a;
-    info("entry: %b, %8x, %p, %p", interrupt_enabled(), running_proc()->trap_state->eflags, running_proc()->trap_state, &a);
 }
 
 /**

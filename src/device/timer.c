@@ -36,7 +36,7 @@ timer_interrupt_handler(interrupt_state_t *state)
     
     /** Increment global timer tick. */
     timer_tick++;
-    printf(".");
+    // printf(".");
 
     /**
      * Check all sleeping processes, set them back to READY if desired
