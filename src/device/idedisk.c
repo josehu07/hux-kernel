@@ -68,13 +68,13 @@ idedisk_start_req(block_request_t *req)
     /** Wait for disk to be in ready state. */
     idedisk_wait_ready();
 
-    outb(IDE_PORT_RW_SECTORS, sectors_per_block);            /** Number of sectors. */
+    outb(IDE_PORT_RW_SECTORS, sectors_per_block);   /** Number of sectors. */
     outb(IDE_PORT_RW_LBA_LO,  sector_no         & 0xFF);   /** LBA address - low  bits. */
     outb(IDE_PORT_RW_LBA_MID, (sector_no >> 8)  & 0xFF);   /** LBA address - mid  bits. */
     outb(IDE_PORT_RW_LBA_HI,  (sector_no >> 16) & 0xFF);   /** LBA address - high bits. */
     outb(IDE_PORT_RW_SELECT, ide_select_entry(true, 0, sector_no)); /** LBA bits 24-27. */
 
-    /** If dirty, kick off a write, otherwise kick off a read. */
+    /** If dirty, kick off a write with data, otherwise kick off a read. */
     if (req->dirty) {
         outb(IDE_PORT_W_COMMAND, (sectors_per_block == 1) ? IDE_CMD_WRITE
                                                           : IDE_CMD_WRITE_MULTIPLE);
@@ -100,7 +100,7 @@ idedisk_interrupt_handler(interrupt_state_t *state)
 
     ide_queue_head = ide_queue_head->next;
 
-    /** If is a read, get data. */
+    /** If is a read, get data now. */
     if (!req->dirty) {
         if (idedisk_wait_ready()) {
             /** Must be a stream in 32-bit dwords, can't be in 8-bit bytes. */
@@ -142,12 +142,12 @@ idedisk_init(void)
     /** Select disk 0 on primary bus and wait for it to be ready */
     outb(IDE_PORT_RW_SELECT, ide_select_entry(true, 0, 0));
     idedisk_wait_ready();
+    outb(IDE_PORT_W_CONTROL, 0);    /** Ensure interrupts on. */
 
     /**
      * Detect that disk 0 on the primary ATA bus is there and is a PATA
      * (IDE) device. Utilzies the IDENTIFY command.
      */
-    outb(IDE_PORT_W_CONTROL,  0);
     outb(IDE_PORT_RW_SECTORS, 0);
     outb(IDE_PORT_RW_LBA_LO,  0);
     outb(IDE_PORT_RW_LBA_MID, 0);

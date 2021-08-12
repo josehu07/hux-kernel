@@ -14,7 +14,7 @@
 #include "../filesys/block.h"
 
 
-/** Default disk sector size is 512 bytes. */
+/** Hard disk sector size is 512 bytes. */
 #define IDE_SECTOR_SIZE 512
 
 
@@ -56,7 +56,7 @@
 
 
 /**
- * IDE status register flags (from PORT_R_STATUS).
+ * IDE status register flags (from PORT_R_STATUS / PORT_R_ALT_STATUS).
  * See https://wiki.osdev.org/ATA_PIO_Mode#Status_Register_.28I.2FO_base_.2B_7.29.
  */
 #define IDE_STATUS_ERR (1 << 0)

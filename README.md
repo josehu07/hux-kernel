@@ -95,10 +95,12 @@ Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kerne
 - [x] Process user mode execution
 - [x] Essential system calls
 - [x] Time-sharing scheduler
-- [ ] Basic IDE disk driver
+- [x] Basic IDE disk driver
 - [ ] Very simple file system
-- [ ] Block caching & swapping
+- [ ] Caching, swapping, & logging
 - [ ] Multi-threading concurrency
 - [ ] Synchronization primitives
+- [ ] Move to APIC & IOAPIC
+- [ ] Direct memory access
 - [ ] Summary of current flaws
 - [ ] Extend Hux to Rux with Rust

@@ -74,19 +74,19 @@ _shell_temp_main(void)
 
     uptime();
 
-    char cmd_buf[128];
-    memset(cmd_buf, 0, 128);
+    // char cmd_buf[128];
+    // memset(cmd_buf, 0, 128);
 
-    while (1) {
-        printf("temp shell $ ");
+    // while (1) {
+    //     printf("temp shell $ ");
         
-        if (kbdstr(cmd_buf, 128) < 0)
-            warn("shell: failed to get keyboard string");
-        else
-            printf("%s", cmd_buf);
+    //     if (kbdstr(cmd_buf, 128) < 0)
+    //         warn("shell: failed to get keyboard string");
+    //     else
+    //         printf("%s", cmd_buf);
 
-        memset(cmd_buf, 0, 128);
-    }
+    //     memset(cmd_buf, 0, 128);
+    // }
 
     // printf("On-stack buffer of size 8200...\n");
     // char buf[8200];
