@@ -3,6 +3,7 @@
 *.map
 *.o
 *.out
+*.img
 
 user/init
 user/*.bin

@@ -31,6 +31,8 @@ ULIB_S_OBJECTS=$(patsubst %.s, %.o, $(ULIB_S_SOURCES))
 USER_SOURCES=$(filter-out $(INIT_SOURCE), $(shell find ./user/ -maxdepth 1 -name "*.c"))
 USER_BINARYS=$(patsubst %.c, %.bin, $(USER_SOURCES))
 
+FILESYS_IMG=fs.img
+
 
 ADDRSPACE_USER_BASE=0x20000000
 
@@ -49,18 +51,22 @@ LD_FLAGS=-ffreestanding -O2 -nostdlib
 OBJCOPY=i686-elf-objcopy
 OBJDUMP=i686-elf-objdump
 
+QEMU_OPTS=-cdrom $(TARGET_ISO) -m 128M \
+		  -drive if=ide,index=0,media=disk,file=$(FILESYS_IMG),format=raw
+
 
 HUX_MSG="[--Hux->]"
+
+
+ALL_DEPS := $(S_OBJECTS) $(C_OBJECTS)
+ALL_DEPS += $(ULIB_S_OBJECTS) $(ULIB_C_OBJECTS) $(USER_BINARYS) initproc
+ALL_DEPS += filesys kernel verify update
+all: $(ALL_DEPS)
 
 
 #
 # Targets for building.
 #
-ALL_DEPS := $(S_OBJECTS) $(C_OBJECTS)
-ALL_DEPS += $(ULIB_S_OBJECTS) $(ULIB_C_OBJECTS) $(USER_BINARYS) initproc
-ALL_DEPS += kernel verify update
-all: $(ALL_DEPS)
-
 $(S_OBJECTS): %.o: %.s
 	@echo
 	@echo $(HUX_MSG) "Compiling kernel assembly '$<'..."
@@ -111,6 +117,15 @@ kernel: $(S_OBJECTS) $(C_OBJECTS) initproc
 
 
 #
+# File system image to be loaded as disk content.
+#
+filesys:
+	@echo
+	@echo $(HUX_MSG) "Making the file system image..."
+	dd if=/dev/zero of=$(FILESYS_IMG) bs=512 count=1000
+
+
+#
 # Verify GRUB multiboot sanity.
 #
 .PHONY: verify
@@ -144,13 +159,13 @@ update:
 qemu:
 	@echo
 	@echo $(HUX_MSG) "Launching QEMU..."
-	qemu-system-i386 -cdrom $(TARGET_ISO)
+	qemu-system-i386 $(QEMU_OPTS)
 
 .PHONY: qemu_debug
 qemu_debug:
 	@echo
 	@echo $(HUX_MSG) "Launching QEMU (debug mode)..."
-	qemu-system-i386 -S -s -cdrom $(TARGET_ISO)
+	qemu-system-i386 $(QEMU_OPTS) -S -s
 
 .PHONY: gdb
 gdb:
@@ -168,4 +183,4 @@ clean:
 	@echo $(HUX_MSG) "Cleaning the build..."
 	rm -f $(S_OBJECTS) $(C_OBJECTS) $(ULIB_S_OBJECTS) $(ULIB_C_OBJECTS) \
 		$(INIT_OBJECT) $(INIT_LINKED) $(INIT_BINARY) $(USER_BINARYS) 	\
-		$(TARGET_BIN) $(TARGET_ISO) $(TARGET_SYM)
+		$(TARGET_BIN) $(TARGET_ISO) $(TARGET_SYM) $(FILESYS_IMG)

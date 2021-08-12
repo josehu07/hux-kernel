@@ -35,6 +35,7 @@ _shell_welcome_logo(void)
             "\n");
 }
 
+__attribute__((unused))
 static void
 _test_child_workload(void)
 {
@@ -50,26 +51,28 @@ _shell_temp_main(void)
 {
     _shell_welcome_logo();
 
-    int8_t i;
+    // int8_t i;
 
-    printf("parent: forking...\n");
-    for (i = 1; i <= 3; ++i) {
-        int8_t pid = fork(i*4);
-        if (pid < 0)
-            error("parent: forking child i=%d failed", i);
-        if (pid == 0) {
-            // Child.
-            _test_child_workload();
-            exit();
-        } else
-            printf("parent: forked child pid=%d, timeslice=%d\n", pid, i*4);
-    }
+    // printf("parent: forking...\n");
+    // for (i = 1; i <= 3; ++i) {
+    //     int8_t pid = fork(i*4);
+    //     if (pid < 0)
+    //         error("parent: forking child i=%d failed", i);
+    //     if (pid == 0) {
+    //         // Child.
+    //         _test_child_workload();
+    //         exit();
+    //     } else
+    //         printf("parent: forked child pid=%d, timeslice=%d\n", pid, i*4);
+    // }
 
-    printf("parent: waiting...\n");
-    for (i = 1; i <= 3; ++i) {
-        int8_t pid = wait();
-        printf("parent: waited child pid=%d\n", pid);
-    }
+    // printf("parent: waiting...\n");
+    // for (i = 1; i <= 3; ++i) {
+    //     int8_t pid = wait();
+    //     printf("parent: waited child pid=%d\n", pid);
+    // }
+
+    uptime();
 
     char cmd_buf[128];
     memset(cmd_buf, 0, 128);

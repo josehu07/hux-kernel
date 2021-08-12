@@ -59,8 +59,10 @@ void isr_register(uint8_t int_no, isr_t handler);
 #define INT_NO_SIMD_FP          19  /** SIMD floating-point error. */
 //                         20 - 31  /** Reserved. */
 
-#define INT_NO_TIMER    32
-#define INT_NO_KEYBOARD 33
+#define IRQ_BASE_NO     32
+#define INT_NO_TIMER    (IRQ_BASE_NO + 0)
+#define INT_NO_KEYBOARD (IRQ_BASE_NO + 1)
+#define INT_NO_IDEDISK  (IRQ_BASE_NO + 14)
 
 /** INT_NO_SYSCALL is 64, defined in `syscall.h`. */
 

@@ -13,6 +13,8 @@
 
 #include "../memory/paging.h"
 
+#include "../filesys/block.h"
+
 
 /** Max number of processes at any time. */
 #define MAX_PROCS 32
@@ -43,8 +45,8 @@ enum process_block_on {
     NOTHING,
     ON_SLEEP,
     ON_WAIT,
-    ON_KBDIN
-    // ... (TODO)
+    ON_KBDIN,
+    ON_IDEDISK
 };
 typedef enum process_block_on process_block_on_t;
 
@@ -75,6 +77,7 @@ struct process {
     uint32_t target_tick;           /** Target wake up timer tick. */
     bool killed;                    /** True if should exit. */
     uint8_t timeslice;              /** Timeslice length for scheduling. */
+    block_request_t *wait_req;      /** Waiting on this block request. */
     // ... (TODO)
 };
 typedef struct process process_t;

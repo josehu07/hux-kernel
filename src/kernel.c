@@ -31,6 +31,9 @@
 
 #include "device/timer.h"
 #include "device/keyboard.h"
+#include "device/idedisk.h"
+
+#include "filesys/block.h"
 
 
 /** Displaying initialization progress message. */
@@ -104,13 +107,18 @@ kernel_main(unsigned long magic, unsigned long addr)
     info("kernel page SLAB list starts at %p", PAGE_SLAB_MIN);
     info("kernel flexible heap  starts at %p", kheap_curr);
 
-    /** Initialize CPu state, process structures, and the `init` process. */
+    /** Initialize CPU state, process structures, and the `init` process. */
     _init_message("initializing CPU state & process structures");
     cpu_init();
     process_init();
     initproc_init();
     _init_message_ok();
     info("maximum number of processes: %d", MAX_PROCS);
+
+    /** Initialize IDE hard disk storage device. */
+    _init_message("initializing IDE hard disk device driver");
+    idedisk_init();
+    _init_message_ok();
 
     /** Executes `sti`, CPU starts taking in interrupts. */
     asm volatile ( "sti" );

@@ -6,13 +6,13 @@
 #include <stdint.h>
 
 #include "sysmem.h"
+#include "paging.h"
 
 #include "../common/debug.h"
 #include "../common/string.h"
 
 #include "../interrupt/syscall.h"
 
-#include "../process/paging.h"
 #include "../process/scheduler.h"
 
 

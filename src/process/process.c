@@ -93,6 +93,7 @@ _alloc_new_process(void)
     proc->block_on = NOTHING;
     proc->pid = next_pid++;
     proc->target_tick = 0;
+    proc->wait_req = NULL;
 
     cli_pop();
 

@@ -45,6 +45,7 @@ timer_interrupt_handler(interrupt_state_t *state)
     for (process_t *proc = ptable; proc < &ptable[MAX_PROCS]; ++proc) {
         if (proc->state == BLOCKED && proc->block_on == ON_SLEEP
             && timer_tick >= proc->target_tick) {
+            proc->target_tick = 0;
             process_unblock(proc);
         }
     }
