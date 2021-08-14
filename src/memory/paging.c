@@ -12,6 +12,7 @@
 #include "../common/debug.h"
 #include "../common/string.h"
 #include "../common/intstate.h"
+#include "../common/bitmap.h"
 
 #include "../interrupt/isr.h"
 
@@ -29,7 +30,7 @@ uint32_t kheap_curr;
 pde_t *kernel_pgdir;    /** Allocated at paging init. */
 
 /** Bitmap indicating free/used frames. */
-static uint32_t *frame_bitmap;
+static bitmap_t frame_bitmap;
 
 
 /**
@@ -54,84 +55,6 @@ _kalloc_temp(size_t size, bool page_align)
     uint32_t temp = kheap_curr;
     kheap_curr += size;
     return temp;
-}
-
-
-/**
- * Helper functions for managing free physical frames, using a bitmap
- * data structure. Every bit indicates the free/used state of a corresponding
- * physical frame. Frame number one-one maps to bit index.
- */
-#define BITMAP_OUTER_IDX(frame_num) ((frame_num) / 32)
-#define BITMAP_INNER_IDX(frame_num) ((frame_num) % 32)
-
-/** Set a frame as used. */
-static inline void
-frame_bitmap_set(uint32_t frame_num)
-{
-    cli_push();
-
-    size_t outer_idx = BITMAP_OUTER_IDX(frame_num);
-    size_t inner_idx = BITMAP_INNER_IDX(frame_num);
-    frame_bitmap[outer_idx] |= (1 << inner_idx);
-
-    cli_pop();
-}
-
-/** Clear a frame as free. */
-static inline void
-frame_bitmap_clear(uint32_t frame_num)
-{
-    cli_push();
-
-    size_t outer_idx = BITMAP_OUTER_IDX(frame_num);
-    size_t inner_idx = BITMAP_INNER_IDX(frame_num);
-    frame_bitmap[outer_idx] &= ~(1 << inner_idx);
-
-    cli_pop();
-}
-
-/** Returns true if a frame is in use, otherwise false. */
-static inline bool
-frame_bitmap_check(uint32_t frame_num)
-{
-    cli_push();
-
-    size_t outer_idx = BITMAP_OUTER_IDX(frame_num);
-    size_t inner_idx = BITMAP_INNER_IDX(frame_num);
-    bool result = frame_bitmap[outer_idx] & (1 << inner_idx);
-
-    cli_pop();
-
-    return result;
-}
-
-/**
- * Allocate a frame and mark as used. Returns the frame number of
- * the allocated frame, or panics if there is no free frame.
- */
-static uint32_t
-frame_bitmap_alloc(void)
-{
-    cli_push();
-
-    for (size_t i = 0; i < (NUM_FRAMES / 32); ++i) {
-        if (frame_bitmap[i] == 0xFFFFFFFF)
-            continue;
-        for (size_t j = 0; j < 32; ++j) {
-            if ((frame_bitmap[i] & (1 << j)) == 0) {
-                /** Found a free frame. */
-                uint32_t frame_num = i * 32 + j;
-                frame_bitmap_set(frame_num);
-
-                cli_pop();
-                return i * 32 + j;
-            }
-        }
-    }
-
-    cli_pop();
-    return NUM_FRAMES;
 }
 
 
@@ -222,7 +145,7 @@ paging_map_upage(pte_t *pte, bool writable)
         return 0;
     }
 
-    uint32_t frame_num = frame_bitmap_alloc();
+    uint32_t frame_num = bitmap_alloc(&frame_bitmap);
     if (frame_num == NUM_FRAMES)
         return 0;
 
@@ -280,7 +203,7 @@ paging_unmap_range(pde_t *pgdir, uint32_t va_start, uint32_t va_end)
         }
 
         if (pgtab[pte_idx].present == 1) {
-            frame_bitmap_clear(pgtab[pte_idx].frame);
+            bitmap_clear(&frame_bitmap, pgtab[pte_idx].frame);
             pgtab[pte_idx].present = 0;
             pgtab[pte_idx].writable = 0;
             pgtab[pte_idx].frame = 0;
@@ -445,8 +368,9 @@ paging_init(void)
      * The frame bitmap also needs space, so allocate space for it in
      * our kernel heap. Clear it to zeros.
      */
-    frame_bitmap = (uint32_t *) _kalloc_temp(NUM_FRAMES / 32, false);
-    memset(frame_bitmap, 0, NUM_FRAMES / 32);
+    frame_bitmap.slots = NUM_FRAMES;
+    frame_bitmap.bits = (uint32_t *) _kalloc_temp(NUM_FRAMES / sizeof(uint32_t), false);
+    memset(frame_bitmap.bits, 0, NUM_FRAMES / sizeof(uint32_t));
 
     /**
      * Allocate the one-page space for the kernel's page directory in
@@ -462,11 +386,11 @@ paging_init(void)
      * frames (from 0 -> KMEM_MAX) as its identity virtual address in
      * the kernel page table, and reserve this entire physical memory region.
      *
-     * Assumes that `frame_bitmap_alloc()` behaves sequentially.
+     * Assumes that `bitmap_alloc()` behaves sequentially.
      */
     uint32_t addr = 0;
     while (addr < KMEM_MAX) {
-        uint32_t frame_num = frame_bitmap_alloc();
+        uint32_t frame_num = bitmap_alloc(&frame_bitmap);
         assert(frame_num < NUM_FRAMES);
         pte_t *pte = paging_walk_pgdir(kernel_pgdir, addr, true, true);
         assert(pte != NULL);

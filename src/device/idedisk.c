@@ -37,7 +37,7 @@ static block_request_t *ide_queue_tail = NULL;
  * or device faults, otherwise true.
  */
 static bool
-idedisk_wait_ready(void)
+_ide_wait_ready(void)
 {
     uint8_t status;
     do {
@@ -56,7 +56,7 @@ idedisk_wait_ready(void)
  * Must be called with interrupts off.
  */
 static void
-idedisk_start_req(block_request_t *req)
+_ide_start_req(block_request_t *req)
 {
     assert(req != NULL);
     // if (req->block_no >= FILESYS_SIZE)
@@ -66,7 +66,7 @@ idedisk_start_req(block_request_t *req)
     uint32_t sector_no = req->block_no * sectors_per_block;
 
     /** Wait for disk to be in ready state. */
-    idedisk_wait_ready();
+    _ide_wait_ready();
 
     outb(IDE_PORT_RW_SECTORS, sectors_per_block);   /** Number of sectors. */
     outb(IDE_PORT_RW_LBA_LO,  sector_no         & 0xFF);   /** LBA address - low  bits. */
@@ -86,6 +86,23 @@ idedisk_start_req(block_request_t *req)
     }
 }
 
+/** Poll until an IDE request has been served. */
+static void
+_ide_poll_req(block_request_t *req)
+{
+    /** If is a read, get data now. */
+    if (!req->dirty) {
+        if (_ide_wait_ready()) {
+            /** Must be a stream in 32-bit dwords, can't be in 8-bit bytes. */
+            insl(IDE_PORT_RW_DATA, req->data, BLOCK_SIZE / sizeof(uint32_t));
+            req->valid = true;
+        }
+    } else {
+        if (_ide_wait_ready())
+            req->dirty = false;
+    }
+}
+
 
 /** IDE disk interrupt handler registered for IRQ # 14. */
 static void
@@ -100,17 +117,11 @@ idedisk_interrupt_handler(interrupt_state_t *state)
 
     ide_queue_head = ide_queue_head->next;
 
-    /** If is a read, get data now. */
-    if (!req->dirty) {
-        if (idedisk_wait_ready()) {
-            /** Must be a stream in 32-bit dwords, can't be in 8-bit bytes. */
-            insl(IDE_PORT_RW_DATA, req->data, BLOCK_SIZE / sizeof(uint32_t));
-            req->valid = true;
-        }
-    } else {
-        if (idedisk_wait_ready())
-            req->dirty = false;
-    }
+    /**
+     * This "poll" should finish immediately, as the interrupt indicates
+     * that the disk must have been ready.
+     */
+    _ide_poll_req(req);
 
     /** Wake up the process waiting on this request. */
     for (process_t *proc = ptable; proc < &ptable[MAX_PROCS]; ++proc) {
@@ -123,7 +134,7 @@ idedisk_interrupt_handler(interrupt_state_t *state)
 
     /** If more requests in queue, start the disk on the next one. */
     if (ide_queue_head != NULL)
-        idedisk_start_req(ide_queue_head);
+        _ide_start_req(ide_queue_head);
     else
         ide_queue_tail = NULL;
 }
@@ -141,7 +152,7 @@ idedisk_init(void)
 
     /** Select disk 0 on primary bus and wait for it to be ready */
     outb(IDE_PORT_RW_SELECT, ide_select_entry(true, 0, 0));
-    idedisk_wait_ready();
+    _ide_wait_ready();
     outb(IDE_PORT_W_CONTROL, 0);    /** Ensure interrupts on. */
 
     /**
@@ -204,7 +215,7 @@ idedisk_do_req(block_request_t *req)
 
     /** Start he disk device if it was idle. */
     if (ide_queue_head == req)
-        idedisk_start_req(req);
+        _ide_start_req(req);
 
     /** Wait for this request to have been served. */
     proc->wait_req = req;
@@ -222,5 +233,25 @@ idedisk_do_req(block_request_t *req)
     }
 
     cli_pop();
+    return true;
+}
+
+/** Do request in polling mode, used only at file system initialization. */
+bool
+idedisk_do_req_at_boot(block_request_t *req)
+{
+    if (req->valid && !req->dirty)
+        error("idedisk_do_req: request valid and not dirty, nothing to do");
+    if (!req->valid && req->dirty)
+        error("idedisk_do_req: caught a dirty request that is not valid");
+
+    _ide_start_req(req);
+    _ide_poll_req(req);
+
+    if (!req->valid || req->dirty) {
+        warn("idedisk_do_req: error occurred in IDE disk request");
+        return false;
+    }
+
     return true;
 }

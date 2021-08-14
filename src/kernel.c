@@ -34,6 +34,7 @@
 #include "device/idedisk.h"
 
 #include "filesys/block.h"
+#include "filesys/vsfs.h"
 
 
 /** Displaying initialization progress message. */
@@ -120,6 +121,13 @@ kernel_main(unsigned long magic, unsigned long addr)
     idedisk_init();
     _init_message_ok();
 
+    /** Initialize the VSFS file system from disk. */
+    _init_message("initializing VSFS file system from disk");
+    filesys_init();
+    _init_message_ok();
+    info("file system block size: %u KiB", BLOCK_SIZE);
+    info("file system image has %u blocks", superblock.fs_blocks);
+
     /** Executes `sti`, CPU starts taking in interrupts. */
     asm volatile ( "sti" );
 
@@ -128,7 +136,7 @@ kernel_main(unsigned long magic, unsigned long addr)
      * process which is `init` and context switch to it, then never
      * switching back.
      */
-    terminal_clear();
+    // terminal_clear();
     scheduler();
 
     error("CPU leaves the scheduler loop, should not happen");

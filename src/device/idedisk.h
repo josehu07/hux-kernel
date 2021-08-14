@@ -101,6 +101,7 @@ ide_select_entry(bool use_lba, uint8_t drive, uint32_t sector_no)
 void idedisk_init();
 
 bool idedisk_do_req(block_request_t *req);
+bool idedisk_do_req_at_boot(block_request_t *req);
 
 
 #endif

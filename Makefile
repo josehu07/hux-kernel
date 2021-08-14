@@ -122,7 +122,7 @@ kernel: $(S_OBJECTS) $(C_OBJECTS) initproc
 filesys:
 	@echo
 	@echo $(HUX_MSG) "Making the file system image..."
-	dd if=/dev/zero of=$(FILESYS_IMG) bs=512 count=1000
+	python3 scripts/mkfs.py $(FILESYS_IMG)
 
 
 #

@@ -7,8 +7,22 @@
 #define BLOCK_H
 
 
+#include <stdint.h>
+#include <stdbool.h>
+
+
 /** All block requests are of size 1024 bytes. */
 #define BLOCK_SIZE 1024
+
+
+/** Helper macros on addresses and block alignments. */
+#define ADDR_BLOCK_OFFSET(addr) ((addr) & 0x000003FF)
+#define ADDR_BLOCK_NUMBER(addr) ((addr) >> 10)
+
+#define ADDR_BLOCK_ALIGNED(addr) (ADDR_BLOCK_OFFSET(addr) == 0)
+
+#define ADDR_BLOCK_ROUND_DN(addr) ((addr) & 0xFFFFFC00)
+#define ADDR_BLOCK_ROUND_UP(addr) (ADDR_BLOCK_ROUND_DN((addr) + 0x000003FF))
 
 
 /**
