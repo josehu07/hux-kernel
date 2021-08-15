@@ -51,6 +51,20 @@ _shell_temp_main(void)
 {
     _shell_welcome_logo();
 
+    char cmd_buf[128];
+    memset(cmd_buf, 0, 128);
+
+    while (1) {
+        printf("temp shell $ ");
+        
+        if (kbdstr(cmd_buf, 128) < 0)
+            warn("shell: failed to get keyboard string");
+        else
+            printf("%s", cmd_buf);
+
+        memset(cmd_buf, 0, 128);
+    }
+
     // int8_t i;
 
     // printf("parent: forking...\n");
@@ -70,22 +84,6 @@ _shell_temp_main(void)
     // for (i = 1; i <= 3; ++i) {
     //     int8_t pid = wait();
     //     printf("parent: waited child pid=%d\n", pid);
-    // }
-
-    uptime();
-
-    // char cmd_buf[128];
-    // memset(cmd_buf, 0, 128);
-
-    // while (1) {
-    //     printf("temp shell $ ");
-        
-    //     if (kbdstr(cmd_buf, 128) < 0)
-    //         warn("shell: failed to get keyboard string");
-    //     else
-    //         printf("%s", cmd_buf);
-
-    //     memset(cmd_buf, 0, 128);
     // }
 
     // printf("On-stack buffer of size 8200...\n");
@@ -116,7 +114,7 @@ _shell_temp_main(void)
 
     // cprintf(VGA_COLOR_LIGHT_GREEN, "\n Round 1 --\n");
     // printf("  Parent: forking child 1\n");
-    // int32_t pid1 = fork();
+    // int32_t pid1 = fork(0);
     // if (pid1 < 0) {
     //     cprintf(VGA_COLOR_RED, "  Parent: fork failed\n");
     //     _fake_halt();
@@ -143,7 +141,7 @@ _shell_temp_main(void)
 
     // cprintf(VGA_COLOR_LIGHT_GREEN, "\n Round 3 --\n");
     // printf("  Parent: forking child 2\n");
-    // int32_t pid2 = fork();
+    // int32_t pid2 = fork(0);
     // if (pid2 < 0) {
     //     cprintf(VGA_COLOR_RED, "  Parent: fork failed\n");
     //     _fake_halt();

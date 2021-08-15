@@ -10,7 +10,7 @@
 #include "timer.h"
 #include "keyboard.h"
 
-#include "../common/intstate.h"
+#include "../common/spinlock.h"
 
 #include "../interrupt/syscall.h"
 
@@ -19,9 +19,9 @@
 int32_t
 syscall_uptime(void)
 {
-    cli_push();
+    spinlock_acquire(&timer_tick_lock);
     uint32_t curr_tick = timer_tick;
-    cli_pop();
+    spinlock_release(&timer_tick_lock);
 
     return (int32_t) (curr_tick * 1000 / TIMER_FREQ_HZ);
 }

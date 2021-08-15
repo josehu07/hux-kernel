@@ -96,31 +96,38 @@ filesys_init(void)
     assert(superblock.data_blocks == 256000);
 
     /** Read in the two bitmaps into memory. */
-    inode_bitmap.slots = superblock.inode_blocks * (BLOCK_SIZE / sizeof(inode_t));
-    size_t inode_bitmap_size = (inode_bitmap.slots / 32) * sizeof(uint32_t);
-    inode_bitmap.bits = (uint32_t *) kalloc(inode_bitmap_size);
+    uint32_t num_inodes = superblock.inode_blocks * (BLOCK_SIZE / sizeof(inode_t));
+    uint32_t *inode_bits = (uint32_t *) kalloc(num_inodes / 8);
+    bitmap_init(&inode_bitmap, inode_bits, num_inodes);
     if (!_disk_read((char *) inode_bitmap.bits,
                     superblock.inode_bitmap_start * BLOCK_SIZE,
-                    inode_bitmap_size, true)) {
+                    num_inodes / 8, true)) {
         error("filesys_init: failed to read inode bitmap from disk");
     }
 
-    data_bitmap.slots = superblock.data_blocks;
-    size_t data_bitmap_size = (data_bitmap.slots / 32) * sizeof(uint32_t);
+    uint32_t num_dblocks = superblock.data_blocks;
+    uint32_t *data_bits = (uint32_t *) kalloc(num_dblocks / 8);
+    bitmap_init(&data_bitmap, data_bits, num_dblocks);
     if (!_disk_read((char *) data_bitmap.bits,
                     superblock.data_bitmap_start * BLOCK_SIZE,
-                    data_bitmap_size, true)) {
+                    num_dblocks / 8, true)) {
         error("filesys_init: failed to read data bitmap from disk");
     }
 
     // TODO: read in root directory
 
-    /** Fill the open file table with empty slots. */
-    for (size_t i = 0; i < MAX_FILES; ++i) {
+    /** Fill open file table and inode table with empty slots. */
+    for (size_t i = 0; i < MAX_OPEN_FILES; ++i) {
         ftable[i].ref_cnt = 0;      /** Indicates UNUSED. */
         ftable[i].readable = false;
         ftable[i].writable = false;
         ftable[i].inode = NULL;
         ftable[i].offset = 0;
+    }
+
+    for (size_t i = 0; i < MAX_MEM_INODES; ++i) {
+        icache[i].ref_cnt = 0;      /** Indicates UNUSED. */
+        icache[i].inumber = 0;
+        icache[i].size = 0;
     }
 }

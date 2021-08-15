@@ -1,5 +1,8 @@
 /**
  * Terminal display control.
+ *
+ * All functions called outside must have `terminal_lock` held already
+ * (`printf()` does that).
  */
 
 
@@ -12,7 +15,7 @@
 #include "../common/string.h"
 #include "../common/port.h"
 #include "../common/debug.h"
-#include "../common/intstate.h"
+#include "../common/spinlock.h"
 
 
 static uint16_t * const VGA_MEMORY = (uint16_t *) 0xB8000;
@@ -31,6 +34,8 @@ const vga_color_t TERMINAL_DEFAULT_COLOR_FG = VGA_COLOR_LIGHT_GREY;
 static uint16_t *terminal_buf;
 static size_t terminal_row;     /** Records current logical cursor pos. */
 static size_t terminal_col;
+
+spinlock_t terminal_lock;
 
 
 /** Enable physical cursor and set thickness to 2. */
@@ -129,6 +134,8 @@ terminal_init(void)
     terminal_row = 0;
     terminal_col = 0;
 
+    spinlock_init(&terminal_lock, "terminal_lock");
+
     _enable_cursor();
     terminal_clear();
 }
@@ -145,13 +152,9 @@ terminal_write(const char *data, size_t size)
 void
 terminal_write_color(const char *data, size_t size, vga_color_t fg)
 {
-    cli_push();
-
     for (size_t i = 0; i < size; ++i)
         _putchar_color(data[i], fg);
     _update_cursor();
-
-    cli_pop();
 }
 
 
@@ -159,8 +162,6 @@ terminal_write_color(const char *data, size_t size, vga_color_t fg)
 void
 terminal_erase(void)
 {
-    cli_push();
-
     if (terminal_col > 0)
         terminal_col--;
     else if (terminal_row > 0) {
@@ -172,16 +173,12 @@ terminal_erase(void)
     terminal_buf[idx] = vga_entry(TERMINAL_DEFAULT_COLOR_BG,
                                   TERMINAL_DEFAULT_COLOR_FG, ' ');
     _update_cursor();
-
-    cli_pop();
 }
 
 /** Clear the terminal window by flushing spaces. */
 void
 terminal_clear(void)
 {
-    cli_push();
-
     for (size_t y = 0; y < VGA_HEIGHT; ++y) {
         for (size_t x = 0; x < VGA_WIDTH; ++x) {
             size_t idx = y * VGA_WIDTH + x;
@@ -193,6 +190,4 @@ terminal_clear(void)
     terminal_row = 0;
     terminal_col = 0;
     _update_cursor();
-
-    cli_pop();
 }

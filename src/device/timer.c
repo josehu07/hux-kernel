@@ -12,7 +12,7 @@
 #include "../common/port.h"
 #include "../common/printf.h"
 #include "../common/debug.h"
-#include "../common/intstate.h"
+#include "../common/spinlock.h"
 
 #include "../interrupt/isr.h"
 
@@ -22,6 +22,7 @@
 
 /** Global counter of timer ticks elapsed since boot. */
 uint32_t timer_tick = 0;
+spinlock_t timer_tick_lock;
 
 
 /**
@@ -34,6 +35,8 @@ timer_interrupt_handler(interrupt_state_t *state)
 {
     (void) state;   /** Unused. */
     
+    spinlock_acquire(&timer_tick_lock);
+
     /** Increment global timer tick. */
     timer_tick++;
     // printf(".");
@@ -42,6 +45,7 @@ timer_interrupt_handler(interrupt_state_t *state)
      * Check all sleeping processes, set them back to READY if desired
      * ticks have passed.
      */
+    spinlock_acquire(&ptable_lock);
     for (process_t *proc = ptable; proc < &ptable[MAX_PROCS]; ++proc) {
         if (proc->state == BLOCKED && proc->block_on == ON_SLEEP
             && timer_tick >= proc->target_tick) {
@@ -49,6 +53,9 @@ timer_interrupt_handler(interrupt_state_t *state)
             process_unblock(proc);
         }
     }
+    spinlock_release(&ptable_lock);
+
+    spinlock_release(&timer_tick_lock);
 
     process_t *proc = running_proc();
     bool user_context = (state->cs & 0x3) == 3      /** DPL field is 3. */
@@ -67,10 +74,10 @@ timer_interrupt_handler(interrupt_state_t *state)
      * to a provess in kernel context (during a syscall) as well.
      */
     if (proc != NULL && proc->state == RUNNING) {
-        cli_push();     /** Needed to satisfy the yield invariant. */
+        spinlock_acquire(&ptable_lock);
         proc->state = READY;
         yield_to_scheduler();
-        cli_pop();
+        spinlock_release(&ptable_lock);
     }
 
     /** Re-check if we get killed since the yield. */
@@ -86,6 +93,10 @@ timer_interrupt_handler(interrupt_state_t *state)
 void
 timer_init(void)
 {
+    timer_tick = 0;
+
+    spinlock_init(&timer_tick_lock, "timer_tick_lock");
+
     /** Register timer interrupt ISR handler. */
     isr_register(INT_NO_TIMER, &timer_interrupt_handler);
 
@@ -100,6 +111,4 @@ timer_init(void)
     /** Sends frequency divisor, in lo | hi order. */
     outb(0x40, (uint8_t) (divisor & 0xFF));
     outb(0x40, (uint8_t) ((divisor >> 8) & 0xFF));
-
-    timer_tick = 0;
 }

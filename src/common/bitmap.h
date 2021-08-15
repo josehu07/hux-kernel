@@ -10,11 +10,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "../common/spinlock.h"
+
 
 /** Bitmap is simply a contiguous array of bits. */
 struct bitmap {
-    uint32_t *bits;     /** Must ensure zero'ed out at intialization! */
+    uint32_t *bits;     /** Must ensure zero'ed out at intialization. */
     uint32_t slots;     /** Must be a multiple of 32, and set at initialization. */
+    spinlock_t lock;    /** Lock protecting this bitmap. */
 };
 typedef struct bitmap bitmap_t;
 
@@ -31,6 +34,8 @@ void bitmap_set(bitmap_t *bitmap, uint32_t slot_no);
 void bitmap_clear(bitmap_t *bitmap, uint32_t slot_no);
 bool bitmap_check(bitmap_t *bitmap, uint32_t slot_no);
 uint32_t bitmap_alloc(bitmap_t *bitmap);
+
+void bitmap_init(bitmap_t *bitmap, uint32_t *bits, uint32_t slots);
 
 
 #endif

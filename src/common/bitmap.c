@@ -8,7 +8,8 @@
 
 #include "bitmap.h"
 #include "debug.h"
-#include "intstate.h"
+#include "string.h"
+#include "spinlock.h"
 
 
 /** Set a slot as used. */
@@ -17,13 +18,16 @@ bitmap_set(bitmap_t *bitmap, uint32_t slot_no)
 {
     assert(slot_no < bitmap->slots);
 
-    cli_push();
+    bool was_locked = spinlock_locked(&(bitmap->lock));
+    if (!was_locked)
+        spinlock_acquire(&(bitmap->lock));
 
     size_t outer_idx = BITMAP_OUTER_IDX(slot_no);
     size_t inner_idx = BITMAP_INNER_IDX(slot_no);
     bitmap->bits[outer_idx] |= (1 << inner_idx);
 
-    cli_pop();
+    if (!was_locked)
+        spinlock_release(&(bitmap->lock));
 }
 
 /** Clear a slot as free. */
@@ -32,13 +36,13 @@ bitmap_clear(bitmap_t *bitmap, uint32_t slot_no)
 {
     assert(slot_no < bitmap->slots);
 
-    cli_push();
+    spinlock_acquire(&(bitmap->lock));
 
     size_t outer_idx = BITMAP_OUTER_IDX(slot_no);
     size_t inner_idx = BITMAP_INNER_IDX(slot_no);
     bitmap->bits[outer_idx] &= ~(1 << inner_idx);
 
-    cli_pop();
+    spinlock_release(&(bitmap->lock));
 }
 
 /** Returns true if a slot is in use, otherwise false. */
@@ -47,13 +51,13 @@ bitmap_check(bitmap_t *bitmap, uint32_t slot_no)
 {
     assert(slot_no < bitmap->slots);
     
-    cli_push();
+    spinlock_acquire(&(bitmap->lock));
 
     size_t outer_idx = BITMAP_OUTER_IDX(slot_no);
     size_t inner_idx = BITMAP_INNER_IDX(slot_no);
     bool result = bitmap->bits[outer_idx] & (1 << inner_idx);
 
-    cli_pop();
+    spinlock_release(&(bitmap->lock));
 
     return result;
 }
@@ -65,7 +69,7 @@ bitmap_check(bitmap_t *bitmap, uint32_t slot_no)
 uint32_t
 bitmap_alloc(bitmap_t *bitmap)
 {
-    cli_push();
+    spinlock_acquire(&(bitmap->lock));
 
     for (size_t i = 0; i < (bitmap->slots / 32); ++i) {
         if (bitmap->bits[i] == 0xFFFFFFFF)
@@ -76,12 +80,23 @@ bitmap_alloc(bitmap_t *bitmap)
                 uint32_t slot_no = i * 32 + j;
                 bitmap_set(bitmap, slot_no);
 
-                cli_pop();
+                spinlock_release(&(bitmap->lock));
                 return i * 32 + j;
             }
         }
     }
 
-    cli_pop();
+    spinlock_release(&(bitmap->lock));
     return bitmap->slots;
+}
+
+
+/** Initialize the bitmap. BITS must have been allocated. */
+void
+bitmap_init(bitmap_t *bitmap, uint32_t *bits, uint32_t slots)
+{
+    bitmap->slots = slots;
+    bitmap->bits = bits;
+    memset(bits, 0, slots / 8);
+    spinlock_init(&(bitmap->lock), "bitmap's spinlock");
 }

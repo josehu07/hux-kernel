@@ -59,6 +59,8 @@ kernel_main(unsigned long magic, unsigned long addr)
 {
     /** Initialize VGA text-mode terminal support. */
     terminal_init();
+    _init_message("setting up VGA terminal display");
+    _init_message_ok();
 
     /** Double check the multiboot magic number. */
     if (magic != MULTIBOOT_BOOTLOADER_MAGIC)

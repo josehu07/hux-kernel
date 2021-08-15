@@ -12,6 +12,7 @@
 
 #include <stdbool.h>
 
+#include "../display/vga.h"
 #include "../display/terminal.h"
 
 
@@ -22,7 +23,7 @@ void snprintf(char *buf, size_t count, const char *fmt, ...);
 
 
 /** Extern to `debug.h`. */
-extern bool printf_to_push_cli;
+extern bool printf_to_hold_lock;
 
 
 #endif

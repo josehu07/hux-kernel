@@ -12,7 +12,7 @@
 #include "../common/printf.h"
 #include "../common/debug.h"
 #include "../common/string.h"
-#include "../common/intstate.h"
+#include "../common/spinlock.h"
 
 #include "../display/vga.h"
 #include "../display/terminal.h"
@@ -506,6 +506,8 @@ static bool capslock_on = false;
 /** If not NULL, that process is listening on keyboard events. */
 static process_t *listener_proc = NULL;
 
+static spinlock_t keyboard_lock;
+
 
 /**
  * Keyboard interrupt handler registered for IRQ #1.
@@ -539,6 +541,8 @@ keyboard_interrupt_handler(interrupt_state_t *state)
     // if (event.press && event.ascii)
     //     printf("%c", event.info.codel);
 
+    spinlock_acquire(&keyboard_lock);
+
     /**
      * React only if no overwriting could happen and if a process is
      * listening on keyboard input. Record the char to the circular buffer,
@@ -568,15 +572,21 @@ keyboard_interrupt_handler(interrupt_state_t *state)
         } else if (event.press && is_back) {
             if (input_put_loc > input_get_loc) {
                 input_put_loc--;
+                spinlock_acquire(&terminal_lock);
                 terminal_erase();
+                spinlock_release(&terminal_lock);
             }
         }
 
         if ((event.press && is_enter)
             || input_put_loc >= input_get_loc + INPUT_BUF_SIZE) {
+            spinlock_acquire(&ptable_lock);
             process_unblock(listener_proc);
+            spinlock_release(&ptable_lock);
         }
     }
+
+    spinlock_release(&keyboard_lock);
 }
 
 
@@ -593,6 +603,8 @@ keyboard_init()
     capslock_on = false;
 
     listener_proc = NULL;
+
+    spinlock_init(&keyboard_lock, "keyboard_lock");
 
     /** Register keybaord interrupt ISR handler. */
     isr_register(INT_NO_KEYBOARD, &keyboard_interrupt_handler);
@@ -614,11 +626,11 @@ keyboard_getstr(char *buf, size_t len)
     assert(buf != NULL);
     assert(len > 0);
 
-    cli_push();
+    spinlock_acquire(&keyboard_lock);
 
     if (listener_proc != NULL) {
         warn("keyboard_getstr: there is already a keyboard listener");
-        cli_pop();
+        spinlock_release(&keyboard_lock);
         return -1;
     }
 
@@ -632,11 +644,17 @@ keyboard_getstr(char *buf, size_t len)
         /** Wait until there are unhandled chars. */
         while (input_get_loc == input_put_loc) {
             if (proc->killed) {
-                cli_pop();
+                spinlock_release(&keyboard_lock);
                 return -1;
             }
 
+            spinlock_acquire(&ptable_lock);
+            spinlock_release(&keyboard_lock);
+
             process_block(ON_KBDIN);
+
+            spinlock_release(&ptable_lock);
+            spinlock_acquire(&keyboard_lock);
         }
 
         /** Fetch the next unhandled char. */
@@ -654,7 +672,7 @@ keyboard_getstr(char *buf, size_t len)
 
     /** Clear the listener. */
     listener_proc = NULL;
-    cli_pop();
 
+    spinlock_release(&keyboard_lock);
     return fetched;
 }

@@ -11,7 +11,7 @@
 
 #include "../common/debug.h"
 #include "../common/string.h"
-#include "../common/intstate.h"
+#include "../common/spinlock.h"
 
 
 /** Page-granularity SLAB free-list. */
@@ -19,6 +19,7 @@ static uint32_t page_slab_btm;
 static uint32_t page_slab_top;
 
 static slab_node_t *page_slab_freelist;
+static spinlock_t page_slab_lock;
 
 
 /**
@@ -26,6 +27,7 @@ static slab_node_t *page_slab_freelist;
  * the first node of any initialized fixed-granularity free-list.
  *
  * There is no data integrity checks on magics. Returns 0 on failures.
+ * Must be called with the corresponding SLAB's lock held.
  */
 static uint32_t
 _salloc_internal(slab_node_t **freelist)
@@ -35,20 +37,16 @@ _salloc_internal(slab_node_t **freelist)
         return 0;
     }
 
-    cli_push();
-
     slab_node_t *node = *freelist;
 
     /** No slab is free, time to panic. */
     if (node == NULL) {
         warn("salloc: free-list %p has no free slabs", freelist);
-        cli_pop();
         return 0;
     }
 
     *freelist = node->next;
     
-    cli_pop();
     return (uint32_t) node;
 }
 
@@ -56,26 +54,28 @@ _salloc_internal(slab_node_t **freelist)
 uint32_t
 salloc_page(void)
 {
-    return _salloc_internal(&page_slab_freelist);
+    spinlock_acquire(&page_slab_lock);
+    uint32_t addr = _salloc_internal(&page_slab_freelist);
+    spinlock_release(&page_slab_lock);
+
+    return addr;
 }
 
 
 /**
  * Internal generic SLAB deallocator. Assumes the address is valid and
  * properly-aligned to the granularity.
+ *
+ * Must be called with the corresponding SLAB's lock held.
  */
 static void
 _sfree_internal(slab_node_t **freelist, void *addr)
 {
-    cli_push();
-
     slab_node_t *node = (slab_node_t *) addr;
 
     /** Simply insert to the head of free-list. */
     node->next = *freelist;
     *freelist = node;
-
-    cli_pop();
 }
 
 /** Wrapper for different granularities. */
@@ -95,7 +95,9 @@ sfree_page(void *addr)
     /** Fill with zero bytes to catch dangling pointers use. */
     memset((char *) addr, 0, PAGE_SIZE);
     
+    spinlock_acquire(&page_slab_lock);
     _sfree_internal(&page_slab_freelist, addr);
+    spinlock_release(&page_slab_lock);
 }
 
 
@@ -113,4 +115,6 @@ page_slab_init(void)
          addr += PAGE_SIZE) {
         sfree_page((char *) addr);
     }
+
+    spinlock_init(&page_slab_lock, "page_slab_lock");
 }

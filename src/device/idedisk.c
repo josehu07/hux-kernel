@@ -13,7 +13,7 @@
 #include "../common/port.h"
 #include "../common/debug.h"
 #include "../common/string.h"
-#include "../common/intstate.h"
+#include "../common/spinlock.h"
 
 #include "../interrupt/isr.h"
 
@@ -30,6 +30,8 @@ static uint16_t ide_identify_data[256];
 /** IDE pending requests software queue. */
 static block_request_t *ide_queue_head = NULL;
 static block_request_t *ide_queue_tail = NULL;
+
+static spinlock_t ide_lock;
 
 
 /**
@@ -110,10 +112,14 @@ idedisk_interrupt_handler(interrupt_state_t *state)
 {
     (void) state;   /** Unused. */
 
+    spinlock_acquire(&ide_lock);
+
     /** Head of queue is the active request currently on the fly. */
     block_request_t *req = ide_queue_head;
-    if (req == NULL)
+    if (req == NULL) {
+        spinlock_release(&ide_lock);
         return;
+    }
 
     ide_queue_head = ide_queue_head->next;
 
@@ -124,19 +130,22 @@ idedisk_interrupt_handler(interrupt_state_t *state)
     _ide_poll_req(req);
 
     /** Wake up the process waiting on this request. */
+    spinlock_acquire(&ptable_lock);
     for (process_t *proc = ptable; proc < &ptable[MAX_PROCS]; ++proc) {
         if (proc->state == BLOCKED && proc->block_on == ON_IDEDISK
             && proc->wait_req == req) {
-            proc->wait_req = NULL;
             process_unblock(proc);
         }
     }
+    spinlock_release(&ptable_lock);
 
     /** If more requests in queue, start the disk on the next one. */
     if (ide_queue_head != NULL)
         _ide_start_req(ide_queue_head);
     else
         ide_queue_tail = NULL;
+
+    spinlock_release(&ide_lock);
 }
 
 
@@ -147,6 +156,11 @@ idedisk_interrupt_handler(interrupt_state_t *state)
 void
 idedisk_init(void)
 {
+    ide_queue_head = NULL;
+    ide_queue_tail = NULL;
+
+    spinlock_init(&ide_lock, "ide_lock");
+    
     /** Register IDE disk interrupt ISR handler. */
     isr_register(INT_NO_IDEDISK, &idedisk_interrupt_handler);
 
@@ -181,9 +195,6 @@ idedisk_init(void)
     /** Must be a stream in 32-bit dwords. */
     memset(ide_identify_data, 0, 256 * sizeof(uint16_t));
     insl(IDE_PORT_RW_DATA, ide_identify_data, 256 * sizeof(uint16_t) / sizeof(uint32_t));
-
-    ide_queue_head = NULL;
-    ide_queue_tail = NULL;
 }
 
 
@@ -203,7 +214,7 @@ idedisk_do_req(block_request_t *req)
     if (!req->valid && req->dirty)
         error("idedisk_do_req: caught a dirty request that is not valid");
 
-    cli_push();
+    spinlock_acquire(&ide_lock);
 
     /** Append to IDE pending requests queue. */
     req->next = NULL;
@@ -220,6 +231,7 @@ idedisk_do_req(block_request_t *req)
     /** Wait for this request to have been served. */
     proc->wait_req = req;
     process_block(ON_IDEDISK);
+    proc->wait_req = NULL;
 
     /**
      * Could be re=scheduld when an IDE interrupt comes saying that this
@@ -228,11 +240,11 @@ idedisk_do_req(block_request_t *req)
      */
     if (!req->valid || req->dirty) {
         warn("idedisk_do_req: error occurred in IDE disk request");
-        cli_pop();
+        spinlock_release(&ide_lock);
         return false;
     }
 
-    cli_pop();
+    spinlock_release(&ide_lock);
     return true;
 }
 

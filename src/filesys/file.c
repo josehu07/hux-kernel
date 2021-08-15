@@ -5,15 +5,20 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #include "file.h"
 
+#include "../common/debug.h"
+#include "../common/spinlock.h"
+#include "../common/parklock.h"
 
-/** Open file table - list of open file structures. */
-file_t ftable[MAX_OPEN_FILES];
 
 /** Open inode table - list of in-memory inode structures. */
 mem_inode_t icache[MAX_MEM_INODES];
+
+/** Open file table - list of open file structures. */
+file_t ftable[MAX_OPEN_FILES];
 
 
 /**
@@ -21,39 +26,40 @@ mem_inode_t icache[MAX_MEM_INODES];
  * increment its ref count and return. Otherwise, read from the disk into
  * an empty inode cache slot.
  */
-mem_inode_t *
-inode_get(uint32_t inumber)
-{
-    mem_inode_t *inode = NULL;
+// mem_inode_t *
+// inode_get(uint32_t inumber)
+// {
+//     mem_inode_t *inode = NULL;
 
-    cli_push();
+//     cli_push();
 
-    /** Search icache to see if it has been in memory. */
-    mem_inode_t *empty_slot = NULL;
-    for (inode = icache; inode < &icache[MAX_MEM_INODES]; ++inode) {
-        if (inode->ref_cnt > 0 && inode->inumber == inumber) {
-            inode->ref_cnt++;
-            cli_pop();
-            return inode;
-        }
-        if (empty_slot == MAX_MEM_INODES && inode->ref_cnt == 0)
-            empty_slot = inode;     /** Remember empty slot seen. */
-    }
+//     /** Search icache to see if it has been in memory. */
+//     mem_inode_t *empty_slot = NULL;
+//     for (inode = icache; inode < &icache[MAX_MEM_INODES]; ++inode) {
+//         if (inode->ref_cnt > 0 && inode->inumber == inumber) {
+//             inode->ref_cnt++;
+//             cli_pop();
+//             return inode;
+//         }
+//         if (empty_slot == NULL && inode->ref_cnt == 0)
+//             empty_slot = inode;     /** Remember empty slot seen. */
+//     }
 
-    if (empty_slot == NULL) {
-        warn("inode_get: no empty mem_inode slot");
-        cli_pop();
-        return NULL;
-    }
+//     if (empty_slot == NULL) {
+//         warn("inode_get: no empty mem_inode slot");
+//         cli_pop();
+//         return NULL;
+//     }
 
-    inode = empty_slot;
-    inode->inumber = inumber;
-    inode->ref_cnt = 1;
+//     inode = empty_slot;
+//     inode->inumber = inumber;
+//     inode->ref_cnt = 1;
 
-    /** Read from disk. */
-    parklock_acquire(inode->lock);
-    // TODO
-}
+//     /** Read from disk. */
+//     // parklock_acquire(inode->lock);
+//     // TODO
+//     return NULL;
+// }
 
 // void
 // ilock(struct inode *ip)

@@ -11,7 +11,7 @@
 
 #include "../common/debug.h"
 #include "../common/string.h"
-#include "../common/intstate.h"
+#include "../common/spinlock.h"
 #include "../common/bitmap.h"
 
 #include "../interrupt/isr.h"
@@ -368,9 +368,8 @@ paging_init(void)
      * The frame bitmap also needs space, so allocate space for it in
      * our kernel heap. Clear it to zeros.
      */
-    frame_bitmap.slots = NUM_FRAMES;
-    frame_bitmap.bits = (uint32_t *) _kalloc_temp(NUM_FRAMES / sizeof(uint32_t), false);
-    memset(frame_bitmap.bits, 0, NUM_FRAMES / sizeof(uint32_t));
+    uint32_t *frame_bits = (uint32_t *) _kalloc_temp(NUM_FRAMES / 8, false);
+    bitmap_init(&frame_bitmap, frame_bits, NUM_FRAMES);
 
     /**
      * Allocate the one-page space for the kernel's page directory in

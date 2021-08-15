@@ -12,7 +12,7 @@
 
 #include "../common/debug.h"
 #include "../common/string.h"
-#include "../common/intstate.h"
+#include "../common/spinlock.h"
 
 #include "../device/timer.h"
 
@@ -24,6 +24,7 @@
 
 /** Process table - list of PCB slots. */
 process_t ptable[MAX_PROCS];
+spinlock_t ptable_lock;
 
 /** Pointing to the `init` process. */
 process_t *initproc;
@@ -44,8 +45,8 @@ extern void return_from_trap(void);
 static void
 _new_process_entry(void)
 {
-    /** Pop the `cli` pushed in the scheduler. */
-    cli_pop();
+    /** Release the lock held in the scheduler context. */
+    spinlock_release(&ptable_lock);
 
     /**
      * The trap state on kernel stack, which will get popped, has EFLAGS
@@ -65,7 +66,7 @@ _alloc_new_process(void)
     process_t *proc;
     bool found = false;
 
-    cli_push();
+    spinlock_acquire(&ptable_lock);
 
     for (proc = ptable; proc < &ptable[MAX_PROCS]; ++proc) {
         if (proc->state == UNUSED) {
@@ -76,7 +77,7 @@ _alloc_new_process(void)
 
     if (!found) {
         warn("new_process: process table is full, no free slot");
-        cli_pop();
+        spinlock_release(&ptable_lock);
         return NULL;
     }
 
@@ -93,9 +94,10 @@ _alloc_new_process(void)
     proc->block_on = NOTHING;
     proc->pid = next_pid++;
     proc->target_tick = 0;
-    proc->wait_req = NULL;
+    proc->wait_req  = NULL;
+    proc->wait_lock = NULL;
 
-    cli_pop();
+    spinlock_release(&ptable_lock);
 
     /**
      * Leave room for the trap state. The initial context will be pushed
@@ -126,6 +128,8 @@ _alloc_new_process(void)
 void
 process_init(void)
 {
+    spinlock_init(&ptable_lock, "ptable_lock");
+
     for (size_t i = 0; i < MAX_PROCS; ++i)
         ptable[i].state = UNUSED;
 
@@ -218,9 +222,10 @@ initproc_init(void)
     initproc = proc;
     proc->killed = false;
 
-    cli_push();     /** Needed because the assignment might not be atomic. */
+    /** Needed to hold lock because the assignment might not be atomic. */
+    spinlock_acquire(&ptable_lock);
     proc->state = READY;
-    cli_pop();
+    spinlock_release(&ptable_lock);
 }
 
 
@@ -317,9 +322,10 @@ process_fork(uint8_t timeslice)
 
     int8_t child_pid = child->pid;
 
-    cli_push();     /** Needed because the assignment might not be atomic. */
+    /** Needed to hold lock because the assignment might not be atomic. */
+    spinlock_acquire(&ptable_lock);
     child->state = READY;
-    cli_pop();
+    spinlock_release(&ptable_lock);
 
     return child_pid;               /** Returns child pid in parent. */
 }
@@ -327,29 +333,43 @@ process_fork(uint8_t timeslice)
 
 /**
  * Block the running process on the given reason.
- * Must be called with `cli` pushed.
+ * 
+ * Must be called with `ptable_lock` held, and exactly only `ptable_lock`
+ * held (so the CPU's `cli_dpeth` is 1. A common pattern would be like:
+ * 
+ *   spinlock_acquire(&ptable_lock);
+ *   spinlock_release(&something_lock);
+ *
+ *   proc->wait_something = ...;
+ *   process_block(ON_SOMETHING);
+ *   proc->wait_something = NULL;
+ *
+ *   spinlock_release(&ptable_lock);
+ *   spinlock_acquire(&something_lock);
  */
 inline void
 process_block(process_block_on_t reason)
 {
+    assert(spinlock_locked(&ptable_lock));
     process_t *proc = running_proc();
 
     proc->block_on = reason;
     proc->state = BLOCKED;
 
-    /** Must yield with `cli` pushed. */
+    /** Must yield with `ptable_lock` held. */
     yield_to_scheduler();
 }
 
-/** Unblock a process by setting it to READY state and clear the reason. */
+/**
+ * Unblock a process by setting it to READY state and clear the reason.
+ * Must be called with `ptable_lock` held.
+ */
 inline void
 process_unblock(process_t *proc)
 {
+    assert(spinlock_locked(&ptable_lock));
     proc->block_on = NOTHING;
-
-    cli_push();     /** Needed because the assignment might not be atomic. */
     proc->state = READY;
-    cli_pop();
 }
 
 
@@ -360,7 +380,7 @@ process_exit(void)
     process_t *proc = running_proc();
     assert(proc != initproc);
 
-    cli_push();
+    spinlock_acquire(&ptable_lock);
 
     /** Parent might be blocking due to waiting. */
     if (proc->parent->state == BLOCKED && proc->parent->block_on == ON_WAIT)
@@ -398,16 +418,16 @@ process_sleep(uint32_t sleep_ticks)
 {
     process_t *proc = running_proc();
 
-    cli_push();
-    
+    spinlock_acquire(&timer_tick_lock);
     uint32_t curr_tick = timer_tick;
+    spinlock_release(&timer_tick_lock);
 
     uint32_t target_tick = curr_tick + sleep_ticks;
     proc->target_tick = target_tick;
 
+    spinlock_acquire(&ptable_lock);
     process_block(ON_SLEEP);
-
-    cli_pop();
+    spinlock_release(&ptable_lock);
 
     /** Could be re-scheduled only if `timer_tick` passed `target_tick`. */
 }
@@ -428,7 +448,7 @@ process_wait(void)
     process_t *proc = running_proc();
     uint32_t child_pid;
 
-    cli_push();
+    spinlock_acquire(&ptable_lock);
 
     while (1) {
         bool have_kids = false;
@@ -455,14 +475,14 @@ process_wait(void)
                 child->name[0] = '\0';
                 child->state = UNUSED;
 
-                cli_pop();
+                spinlock_release(&ptable_lock);
                 return child_pid;
             }
         }
 
         /** Dont' have children. */
         if (!have_kids || proc->killed) {
-            cli_pop();
+            spinlock_release(&ptable_lock);
             return -1;
         }
 
@@ -481,7 +501,7 @@ process_wait(void)
 int8_t
 process_kill(int8_t pid)
 {
-    cli_push();
+    spinlock_acquire(&ptable_lock);
 
     for (process_t *proc = ptable; proc < &ptable[MAX_PROCS]; ++proc) {
         if (proc->pid == pid) {
@@ -491,11 +511,11 @@ process_kill(int8_t pid)
             if (proc->state == BLOCKED)
                 process_unblock(proc);
 
-            cli_pop();
+            spinlock_release(&ptable_lock);
             return 0;
         }
     }
 
-    cli_pop();
+    spinlock_release(&ptable_lock);
     return -1;
 }

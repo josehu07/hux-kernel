@@ -97,7 +97,7 @@ $(USER_BINARYS): %.bin: %.c $(ULIB_S_OBJECTS) $(ULIB_C_OBJECTS)
 	$(OBJCOPY) --strip-debug $@
 
 # Init process goes separately, to allow later embedding into kernel image.
-initproc:
+initproc: $(INIT_SOURCE) $(ULIB_S_OBJECTS) $(ULIB_C_OBJECTS)
 	@echo
 	@echo $(HUX_MSG) "Compiling & linking user 'init' program..."
 	$(CC) $(C_FLAGS_USER) -o $(INIT_OBJECT) $(INIT_SOURCE)
@@ -119,6 +119,7 @@ kernel: $(S_OBJECTS) $(C_OBJECTS) initproc
 #
 # File system image to be loaded as disk content.
 #
+.PHONY: filesys
 filesys:
 	@echo
 	@echo $(HUX_MSG) "Making the file system image..."

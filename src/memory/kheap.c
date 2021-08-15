@@ -13,7 +13,7 @@
 #include "../common/printf.h"
 #include "../common/string.h"
 #include "../common/debug.h"
-#include "../common/intstate.h"
+#include "../common/spinlock.h"
 
 
 static uint32_t kheap_btm;
@@ -24,6 +24,8 @@ static uint32_t kheap_top;
 static fl_header_t *bottom_most_header;     /** Address-wise smallest node. */
 static fl_header_t *last_search_header;     /** Where the last search ends. */
 static size_t free_list_length = 1;
+
+static spinlock_t kheap_lock;
 
 
 /** For debug printing the state of the free-list. */
@@ -51,11 +53,11 @@ _print_free_list_state(void)
 uint32_t
 kalloc(size_t size)
 {
-    cli_push();
+    spinlock_acquire(&kheap_lock);
 
     if (free_list_length == 0) {
         warn("kalloc: kernel flexible heap all used up");
-        cli_pop();
+        spinlock_release(&kheap_lock);
         return 0;
     }
 
@@ -123,14 +125,14 @@ kalloc(size_t size)
         uint32_t object = HEADER_TO_OBJECT((uint32_t) header_curr);
 
         // _print_free_list_state();
-        cli_pop();
+        spinlock_release(&kheap_lock);
         return object;
 
     } while (header_curr != header_begin);
 
     /** No free chunk is large enough, time to panic. */
     warn("kalloc: no free chunk large enough for size %d\n", size);
-    cli_pop();
+    spinlock_release(&kheap_lock);
     return 0;
 }
 
@@ -158,7 +160,7 @@ kfree(void *addr)
     header->free = true;
     memset((char *) addr, 0, header->size);
 
-    cli_push();
+    spinlock_acquire(&kheap_lock);
 
     /**
      * Special case of empty free-list (all bytes exactly allocated before
@@ -247,7 +249,7 @@ kfree(void *addr)
     }
 
     // _print_free_list_state();
-    cli_pop();
+    spinlock_release(&kheap_lock);
 }
 
 
@@ -275,4 +277,6 @@ kheap_init(void)
     bottom_most_header = header;
     last_search_header = header;
     free_list_length = 1;
+
+    spinlock_init(&kheap_lock, "kheap_lock");
 }

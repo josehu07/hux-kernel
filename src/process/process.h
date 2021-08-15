@@ -8,6 +8,10 @@
 
 
 #include <stdint.h>
+#include <stdbool.h>
+
+#include "../common/spinlock.h"
+#include "../common/parklock.h"
 
 #include "../interrupt/isr.h"
 
@@ -46,7 +50,8 @@ enum process_block_on {
     ON_SLEEP,
     ON_WAIT,
     ON_KBDIN,
-    ON_IDEDISK
+    ON_IDEDISK,
+    ON_LOCK
 };
 typedef enum process_block_on process_block_on_t;
 
@@ -74,17 +79,19 @@ struct process {
     uint32_t stack_low;             /** Current bottom of stack pages. */
     uint32_t heap_high;             /** Current top of heap pages. */
     struct process *parent;         /** Parent process. */
-    uint32_t target_tick;           /** Target wake up timer tick. */
     bool killed;                    /** True if should exit. */
     uint8_t timeslice;              /** Timeslice length for scheduling. */
+    uint32_t target_tick;           /** Target wake up timer tick. */
     block_request_t *wait_req;      /** Waiting on this block request. */
-    // ... (TODO)
+    parklock_t *wait_lock;          /** Waiting on this parking lock. */
 };
 typedef struct process process_t;
 
 
 /** Extern the process table to the scheduler. */
 extern process_t ptable[];
+extern spinlock_t ptable_lock;
+
 extern process_t *initproc;
 
 

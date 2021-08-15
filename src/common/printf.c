@@ -14,16 +14,16 @@
 #include "types.h"
 #include "string.h"
 
-#include "../common/intstate.h"
+#include "../common/spinlock.h"
 
 #include "../display/terminal.h"
 
 
 /**
- * Turn off `cli` pushing/popping for terminal printing on assertion failures,
+ * Turn off lock acquiring for terminal printing on assertion failures,
  * because assertions are used in `cli_pop()` itself.
  */
-bool printf_to_push_cli = true;
+bool printf_to_hold_lock = true;
 
 
 /** Internal format specifier flags. */
@@ -906,11 +906,11 @@ printf(const char *fmt, ...)
     va_list va;
     va_start(va, fmt);
 
-    if (printf_to_push_cli)
-        cli_push();
+    if (printf_to_hold_lock)
+        spinlock_acquire(&terminal_lock);
     _vprintf(TERMINAL_DEFAULT_COLOR_FG, fmt, va);
-    if (printf_to_push_cli)
-        cli_pop();
+    if (printf_to_hold_lock)
+        spinlock_release(&terminal_lock);
     
     va_end(va);
 }
@@ -922,11 +922,11 @@ cprintf(vga_color_t fg, const char *fmt, ...)
     va_list va;
     va_start(va, fmt);
 
-    if (printf_to_push_cli)
-        cli_push();
+    if (printf_to_hold_lock)
+        spinlock_acquire(&terminal_lock);
     _vprintf(fg, fmt, va);
-    if (printf_to_push_cli)
-        cli_pop();
+    if (printf_to_hold_lock)
+        spinlock_release(&terminal_lock);
     
     va_end(va);
 }

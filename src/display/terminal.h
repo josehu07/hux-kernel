@@ -11,6 +11,12 @@
 
 #include "vga.h"
 
+#include "../common/spinlock.h"
+
+
+/** Extern to `printf.c` and other places of calling `terminal_`. */
+extern spinlock_t terminal_lock;
+
 
 /**
  * Default to black background + light grey foreground.

@@ -43,7 +43,7 @@ scheduler(void)
          */
         asm volatile ( "sti" );
 
-        cli_push();
+        spinlock_acquire(&ptable_lock);
 
         /** Look for a ready process in ptable. */
         process_t *proc;
@@ -58,8 +58,10 @@ scheduler(void)
                 //      proc->pid, proc->name);
 
                 /** Set up TSS for this process, and switch page directory. */
+                cli_push();
                 gdt_switch_tss(&(cpu_state.task_state), proc);
                 paging_switch_pgdir(proc->pgdir);
+                cli_pop();
                 
                 cpu_state.running_proc = proc;
                 proc->state = RUNNING;
@@ -81,7 +83,7 @@ scheduler(void)
             }
         }
 
-        cli_pop();
+        spinlock_release(&ptable_lock);
     }
 }
 
@@ -90,6 +92,7 @@ scheduler(void)
 inline process_t *
 running_proc(void)
 {
+    /** Need to disable interrupts since the get might not be atomic. */
     cli_push();
     process_t *proc = cpu_state.running_proc;
     cli_pop();
@@ -100,7 +103,7 @@ running_proc(void)
 
 /**
  * Return back to the scheduler context.
- * Must be called with `cli` pushed.
+ * Must be called with `ptable_lock` held.
  */
 void
 yield_to_scheduler(void)
@@ -109,6 +112,7 @@ yield_to_scheduler(void)
     assert(proc->state != RUNNING);
     assert(!interrupt_enabled());
     assert(cpu_state.cli_depth == 1);
+    assert(spinlock_locked(&ptable_lock));
     
     /**
      * Save & restore int_enable state because this state is essentially

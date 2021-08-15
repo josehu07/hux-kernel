@@ -52,8 +52,8 @@ def main():
     output_img = sys.argv[1]
 
     if os.path.isfile(output_img):
-        print("Output image file {} exists, stopping".format(output_img))
-        exit(2)
+        print("WARN: output image file '{}' exists, skipping!".format(output_img))
+        exit(0)
 
     img = bytearray(FS_BLOCKS * BLOCK_SIZE)     # Zero bytes by default
     gen_superblock(img)

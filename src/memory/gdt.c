@@ -110,6 +110,8 @@ gdt_init()
  * Set up TSS for a process to be switched, so that the CPU will be able
  * to jump to its kernel stack when a system call happens.
  * Check out https://wiki.osdev.org/Task_State_Segment for details.
+ *
+ * Must be called with `cli` pushed explicitly.
  */
 void
 gdt_switch_tss(tss_t *tss, process_t *proc)
