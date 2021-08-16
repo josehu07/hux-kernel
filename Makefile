@@ -31,7 +31,7 @@ ULIB_S_OBJECTS=$(patsubst %.s, %.o, $(ULIB_S_SOURCES))
 USER_SOURCES=$(filter-out $(INIT_SOURCE), $(shell find ./user/ -maxdepth 1 -name "*.c"))
 USER_BINARYS=$(patsubst %.c, %.bin, $(USER_SOURCES))
 
-FILESYS_IMG=fs.img
+FILESYS_IMG=vsfs.img
 
 
 ADDRSPACE_USER_BASE=0x20000000
@@ -123,7 +123,7 @@ kernel: $(S_OBJECTS) $(C_OBJECTS) initproc
 filesys:
 	@echo
 	@echo $(HUX_MSG) "Making the file system image..."
-	python3 scripts/mkfs.py $(FILESYS_IMG)
+	python3 scripts/mkfs.py $(FILESYS_IMG) $(USER_BINARYS)
 
 
 #

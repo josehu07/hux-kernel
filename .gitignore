@@ -5,6 +5,8 @@
 *.out
 *.img
 
+temp/
+
 user/init
 user/*.bin
 

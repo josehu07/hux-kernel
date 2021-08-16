@@ -10,10 +10,31 @@
 
 import os
 import sys
+from pathlib import Path, PurePath
+from pprint import PrettyPrinter
+
+class MyPrinter(PrettyPrinter):
+    """
+    Automatically shorten excessively long bytearrays.
+    Credit: https://stackoverflow.com/questions/20514525/
+            automatically-shorten-long-strings-when-dumping-with-pretty-print
+    """
+    def _format(self, object, *args, **kwargs):
+        if isinstance(object, bytearray):
+            if len(object) > 5:
+                object = object[:5] + b'...'
+        return PrettyPrinter._format(self, object, *args, **kwargs)
 
 
 # These definitions should follow `src/filesys/vsfs.h` for now.
 BLOCK_SIZE = 1024
+INODE_SIZE = 128
+DENTRY_SIZE = 128
+
+INODES_PB = BLOCK_SIZE / INODE_SIZE
+DENTRY_PB = BLOCK_SIZE / DENTRY_SIZE
+UINT32_PB = BLOCK_SIZE / 4
+
 FS_BLOCKS = 262144
 INODE_BITMAP_START = 1
 INODE_BITMAP_BLOCKS = 6
@@ -24,41 +45,314 @@ INODE_BLOCKS = 6105
 DATA_START = 6144
 DATA_BLOCKS = 256000
 
+NUM_DIRECT    = 16
+NUM_INDIRECT1 = 8
+NUM_INDIRECT2 = 1
+
+MAX_FILENAME = 120
+
+INODE_TYPE_EMPTY = 0
+INODE_TYPE_FILE  = 1
+INODE_TYPE_DIR   = 2
+
 ENDIANESS = 'little'    # x86 IA32 is little endian
 
 
-# Put a uint32_t at given byte offset.
-def put_byte(img, offset, number):
-    img[offset:offset+4] = number.to_bytes(4, byteorder='little', signed=False)
+# FS image bytearray.
+img = bytearray(FS_BLOCKS * BLOCK_SIZE)     # Zero bytes by default
+
+# Current inode slots & data blocks used.
+curr_data_block = 0
+curr_inumber = 1        # 0 is reserved for the root directory
+
+# Initial directory tree as a dictionary, see `build_dtree()`.
+dtree = dict()
 
 
-# Generate the superblock.
-def gen_superblock(img):
-    put_byte(img, 0 , FS_BLOCKS          )
-    put_byte(img, 4 , INODE_BITMAP_START )
-    put_byte(img, 8 , INODE_BITMAP_BLOCKS)
-    put_byte(img, 12, DATA_BITMAP_START  )
-    put_byte(img, 16, DATA_BITMAP_BLOCKS )
-    put_byte(img, 20, INODE_START        )
-    put_byte(img, 24, INODE_BLOCKS       )
-    put_byte(img, 28, DATA_START         )
-    put_byte(img, 32, DATA_BLOCKS        )
+def uint32_to_bytes(uint32):
+    """
+    Convert a number to uint32_t bytes.
+    """
+    return uint32.to_bytes(4, byteorder=ENDIANESS, signed=False)
+
+def string_to_bytes(string):
+    """
+    Convert a string to NULL-terminated ASCII string.
+    """
+    return bytearray(string, encoding='ascii') + b'\x00'
+
+def put_uint32(offset, uint32):
+    """
+    Put a uint32_t at given byte offset.
+    """
+    offset = int(offset)
+    img[offset:offset+4] = uint32_to_bytes(uint32)
+
+def put_bytearray(offset, barray):
+    """
+    Put a bytearray at given byte offset.
+    """
+    offset = int(offset)
+    img[offset:offset+len(barray)] = barray
+
+
+def gen_superblock():
+    """
+    Generate the superblock.
+    """
+    put_uint32(0 , FS_BLOCKS          )
+    put_uint32(4 , INODE_BITMAP_START )
+    put_uint32(8 , INODE_BITMAP_BLOCKS)
+    put_uint32(12, DATA_BITMAP_START  )
+    put_uint32(16, DATA_BITMAP_BLOCKS )
+    put_uint32(20, INODE_START        )
+    put_uint32(24, INODE_BLOCKS       )
+    put_uint32(28, DATA_START         )
+    put_uint32(32, DATA_BLOCKS        )
+
+
+def add_data_block(block):
+    """
+    Put a block of bytes into a free data block.
+    Returns the address of the block allocated.
+    """
+    global curr_data_block
+    addr = (DATA_START + curr_data_block) * BLOCK_SIZE
+    put_bytearray(addr, block)
+    curr_data_block += 1
+    return addr
+
+def add_inode(file_size, data_blocks, inode_type, is_root_dir):
+    """
+    Put an inode into a free inode slot, given file size and allocated
+    data block addresses.
+    Returns the inode number (slot index) allocated.
+    """
+    assert file_size > (len(data_blocks) - 1) * BLOCK_SIZE
+    assert file_size <= len(data_blocks) * BLOCK_SIZE
+    assert inode_type == INODE_TYPE_FILE or inode_type == INODE_TYPE_DIR
+
+    global curr_inumber
+    if is_root_dir:
+        inumber = 0
+    else:
+        inumber = curr_inumber
+        curr_inumber += 1
+    addr = INODE_START * BLOCK_SIZE + inumber * INODE_SIZE
+    
+    put_uint32(addr,     inode_type)
+    put_uint32(addr + 4, file_size)
+
+    # Direct.
+    idx = 0
+    while idx < NUM_DIRECT:
+        if idx >= len(data_blocks):
+            break
+        put_uint32(addr + 8 + idx*4, data_blocks[idx])
+        idx += 1
+
+    # Singly-indirect.
+    while idx < (NUM_DIRECT + NUM_INDIRECT1*UINT32_PB):
+        if idx >= len(data_blocks):
+            break
+        chopped_idx = idx - NUM_DIRECT
+        indirect1_block = bytearray(BLOCK_SIZE)
+        for i in range(0, BLOCK_SIZE, 4):
+            if idx >= len(data_blocks):
+                break
+            indirect1_block[i:i+4] = uint32_to_bytes(data_blocks[idx])
+            idx += 1
+        indirect1_addr = add_data_block(indirect1_block)
+        put_uint32(addr + 8 + NUM_DIRECT*4 + (chopped_idx//UINT32_PB)*4,
+                   indirect1_addr)
+
+    # Doubly-indirect.
+    while idx < (NUM_DIRECT + NUM_INDIRECT1*UINT32_PB \
+                 + NUM_INDIRECT2*(UINT32_PB**2)):
+        if idx >= len(data_blocks):
+            break
+        chopped_idx = idx - NUM_DIRECT - NUM_INDIRECT1*UINT32_PB
+        indirect1_block = bytearray(BLOCK_SIZE)
+        for i in range(0, BLOCK_SIZE, 4):
+            if idx >= len(data_blocks):
+                break
+            indirect2_block = bytearray(BLOCK_SIZE)
+            for j in range(0, BLOCK_SIZE, 4):
+                if idx >= len(data_blocks):
+                    break
+                indirect2_block[j:j+4] = uint32_to_bytes(data_blocks[idx])
+                idx += 1
+            indirect2_addr = add_data_block(indirect2_block)
+            indirect1_block[i:i+4] = uint32_to_bytes(indirect2_addr)
+        indirect1_addr = add_data_block(indirect1_block)
+        put_uint32(addr + 8 + NUM_DIRECT*4 + NUM_INDIRECT1*4 \
+                   + (chopped_idx//(UINT32_PB**2))*4,
+                   indirect1_addr)
+
+    return inumber
+
+def add_file(content):
+    """
+    Add a regular file into the file system image.
+    Returns the inumber assigned to this file.
+    """
+    data_blocks = []
+    for block_beg in range(0, len(content), BLOCK_SIZE):
+        block_end = min(block_beg + BLOCK_SIZE, len(content))
+        data_blocks.append(add_data_block(content[block_beg:block_end]))
+
+    return add_inode(len(content), data_blocks, INODE_TYPE_FILE, False)
+
+def add_dir(content, is_root_dir):
+    """
+    Add a directory into the file system image. All things inside this
+    directory must have been added.
+    Returns the inumber assigned to this directory.
+    """
+    names = list(content.keys())
+    inumbers = list(map(lambda val: val[0], content.values()))
+
+    data_blocks = []
+    idx = 0
+    while idx < len(names):
+        dir_block = bytearray(BLOCK_SIZE)
+        for i in range(0, BLOCK_SIZE, DENTRY_SIZE):
+            if idx >= len(names):
+                break
+            if len(names[idx]) > MAX_FILENAME:
+                print("Error: file name '{}' exceeds max length", names[idx])
+                exit(1)
+            if inumbers[idx] < 1 or inumbers[idx] >= INODE_BLOCKS * INODES_PB:
+                print("Error: detected invalid inumber {}", inumbers[idx])
+                exit(1)
+            dir_block[i:i+4] = uint32_to_bytes(inumbers[idx])
+            name_bytes = string_to_bytes(names[idx])
+            dir_block[i+4:i+4+len(name_bytes)] = name_bytes
+            idx += 1
+        data_blocks.append(add_data_block(dir_block))
+
+    return add_inode(len(names) * DENTRY_SIZE, data_blocks, INODE_TYPE_DIR,
+                     is_root_dir)
+
+
+def gen_bitmaps():
+    """
+    Generate the inode bitmap and data bitmap according to the number of
+    inode slots and data blocks used.
+    """
+    def prefix_bits(num):
+        """
+        Get a byte with prefix of NUM bits.
+        """
+        assert num >= 0 and num < 8
+        prefix_dict = { 0: b'\x00',
+                        1: b'\x80',
+                        2: b'\xC0',
+                        3: b'\xE0',
+                        4: b'\xF0',
+                        5: b'\xF8',
+                        6: b'\xFC',
+                        7: b'\xFE' }
+        return prefix_dict[num]
+
+    inode_bitmap = bytearray(0)
+    for i in range(curr_inumber // 8):
+        inode_bitmap.extend(b'\xFF')
+    inode_bitmap.extend(prefix_bits(curr_inumber % 8))
+    put_bytearray(INODE_BITMAP_START * BLOCK_SIZE, inode_bitmap)
+
+    data_bitmap = bytearray(0)
+    for i in range(curr_data_block // 8):
+        data_bitmap.extend(b'\xFF')
+    data_bitmap.extend(prefix_bits(curr_data_block % 8))
+    put_bytearray(DATA_BITMAP_START * BLOCK_SIZE, data_bitmap)
+
+
+def build_dtree(bins):
+    """
+    Build the directory tree out of what's under `user/`. The dtree is a
+    dict of:
+      string name -> 2-list [inumber, element]
+    
+    , where element could be:
+      - Raw bytes for regular file
+      - A `dict` for directory, which recurses on
+    """
+    for b in bins:
+        bpath = Path(b)
+        if not bpath.is_file():
+            print("Error: user binary '{}' is not a regular file".format(b))
+            exit(1)
+
+        parts = PurePath(b).parts
+        parents = parts[1:-1]
+        binary = parts[-1]
+        if parts[0] != "user":
+            print("Error: user binray '{}' is not under 'user/'".format(b))
+            exit(1)
+        if not binary.endswith(".bin"):
+            print("Error: user binray '{}' does not end with '.bin'".format(b))
+            exit(1)
+        binary = binary[:-4]
+
+        curr_dir = dtree
+        for d in parents:
+            if d not in curr_dir:
+                curr_dir[d] = [-1, dict()]
+            curr_dir = curr_dir[d][1]
+
+        with bpath.open(mode='br') as bfile:
+            curr_dir[binary] = [-1, bytearray(bfile.read())]
+
+def solidize_dtree():
+    """
+    Solidize the directory tree into the file system image bytearray.
+    """
+    def solidize_elem(elem, is_root_dir):
+        """
+        Recursively solidizes an element. If ELEM is a bytearray, it is
+        a regular file. If ELEM is a dict, it is a directory and should
+        recurse deeper if the directory contains things.
+
+        Returns the inumber solidized for this element.
+        """
+        if isinstance(elem, bytearray):
+            return add_file(elem)
+        elif isinstance(elem, dict):
+            # Do children first so that they get assigned an inumber.
+            for key, val in elem.items():
+                inumber = solidize_elem(val[1], False)
+                val[0] = inumber
+            # Then put the directory.
+            return add_dir(elem, is_root_dir)
+        else:
+            print("Error: unrecognized element type {}".format(type(content)))
+            exit(1)
+
+    solidize_elem(dtree, True)
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: python3 {} output_name.img".format(sys.argv[0]))
+    if len(sys.argv) < 2:
+        print("Usage: python3 {} output_name.img [user_binaries]".format(sys.argv[0]))
         exit(1)
     output_img = sys.argv[1]
+    user_binaries = sys.argv[2:]
 
     if os.path.isfile(output_img):
         print("WARN: output image file '{}' exists, skipping!".format(output_img))
         exit(0)
 
-    img = bytearray(FS_BLOCKS * BLOCK_SIZE)     # Zero bytes by default
-    gen_superblock(img)
-    # TODO
+    # Build the initial file system image.
+    gen_superblock()
+    build_dtree(user_binaries)
+    solidize_dtree()
+    gen_bitmaps()
 
+    print("Initial FS image directory tree:")
+    MyPrinter().pprint(dtree)
+
+    # Flush the image bytes to output file.
     with open(output_img, mode='bw') as output_file:
         output_file.write(img)
 

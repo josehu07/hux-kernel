@@ -12,16 +12,16 @@
 
 #include "vsfs.h"
 
+#include "../common/spinlock.h"
+#include "../common/parklock.h"
+
 
 /** In-memory copy of open inode, be sure struct size <= 128 bytes. */
 struct mem_inode {
     uint8_t ref_cnt;    /** Reference count (from file handles). */
     uint32_t inumber;   /** Inode number identifier. */
-    /** Read in on-disk inode information. */
-    uint32_t data0[NUM_DIRECT];     /** Direct blocks. */
-    uint32_t data1[NUM_INDIRECT1];  /** 1-level indirect blocks. */
-    uint32_t data2[NUM_INDIRECT2];  /** 2-level indirect blocks. */
-    uint32_t size;                  /** File size in bytes. */
+    parklock_t lock;    /** Parking lock held when waiting for disk I/O. */
+    inode_t d_inode;    /** Read in on-disk inode structure. */
 };
 typedef struct mem_inode mem_inode_t;
 
@@ -45,7 +45,14 @@ typedef struct file file_t;
 
 /** Extern the tables to `vsfs.c`. */
 extern mem_inode_t icache[];
+extern spinlock_t icache_lock;
+
 extern file_t ftable[];
+extern spinlock_t ftable_lock;
+
+
+mem_inode_t *inode_get(uint32_t inumber);
+void inode_put(mem_inode_t *m_inode);
 
 
 #endif

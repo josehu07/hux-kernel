@@ -25,18 +25,21 @@ If there are any typos / mistakes / errors, please raise an issue!
 
 ## Playing with Hux
 
-With QEMU (recommended), download the CDROM image `hux.iso` and do:
+Requires a Linux host development environment. Tested on Ubuntu Xenial, Bionic, & Focal.
 
-```bash
-$ qemu-system-i386 -cdrom hux.iso
-```
-
-(This `hux.iso` image has bot been uploaded yet. The first release of Hux is coming soon.)
-
-Or, if you clone the repo and build Hux yourself:
+Clone the repo, set up a development cross-compilation toolchain following [this wiki page](https://github.com/josehu07/hux-kernel/wiki/02.-The-Very-First-Skeleton), then build Hux by:
 
 ```bash
 $ make
+```
+
+Or, if you just want to try out Hux without a development toolchain, download both the released kernel image `hux.iso` and the initial file system image `vsfs.img` to the folder.
+
+(The images have bot been uploaded yet. The first release of Hux is coming soon.)
+
+To run Hux in QEMU, do:
+
+```bash
 $ make qemu
 ```
 
@@ -99,7 +102,7 @@ Check the "References" section [here](https://github.com/hgz12345ssdlh/hux-kerne
 - [ ] Very simple file system
 - [ ] Caching, swapping, & logging
 - [ ] Multi-threading concurrency
-- [ ] Synchronization primitives
+- [x] Synchronization primitives
 - [ ] Move to APIC & IOAPIC
 - [ ] Direct memory access
 - [ ] Summary of current flaws

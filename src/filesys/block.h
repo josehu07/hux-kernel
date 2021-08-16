@@ -1,5 +1,5 @@
 /**
- * Block I/O request information structure.
+ * Block-level I/O general request layer.
  */
 
 
@@ -40,6 +40,9 @@ struct block_request {
     uint8_t data[BLOCK_SIZE];
 };
 typedef struct block_request block_request_t;
+
+
+bool block_read(char *dst, uint32_t disk_addr, uint32_t len, bool boot);
 
 
 #endif

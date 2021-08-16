@@ -12,10 +12,9 @@
 #include "file.h"
 
 #include "../common/debug.h"
-#include "../common/string.h"
 #include "../common/bitmap.h"
-
-#include "../device/idedisk.h"
+#include "../common/spinlock.h"
+#include "../common/parklock.h"
 
 #include "../memory/kheap.h"
 #include "../memory/slabs.h"
@@ -29,46 +28,6 @@ static bitmap_t data_bitmap;
 
 
 /**
- * Helper function for reading blocks of data from disk into memory.
- * Uses an internal request buffer, so not zero-copy I/O. DST is the
- * destination buffer, and DISK_ADDR and LEN are both in bytes.
- */
-static bool
-_disk_read(char *dst, uint32_t disk_addr, uint32_t len, bool boot)
-{
-    block_request_t req;
-
-    uint32_t bytes_read = 0;
-    while (len > bytes_read) {
-        uint32_t bytes_left = len - bytes_read;
-
-        uint32_t start_addr = disk_addr + bytes_read;
-        uint32_t block_no = ADDR_BLOCK_NUMBER(start_addr);
-
-        uint32_t next_addr = ADDR_BLOCK_ROUND_DN(start_addr) + BLOCK_SIZE;
-        uint32_t effective = next_addr - start_addr;
-        if (bytes_left < effective)
-            effective = bytes_left;
-
-        req.valid = false;
-        req.dirty = false;
-        req.block_no = block_no;
-        bool success = boot ? idedisk_do_req_at_boot(&req)
-                            : idedisk_do_req(&req);
-        if (!success) {
-            warn("disk_read: reading IDE disk block %u failed", block_no);
-            return false;
-        }
-
-        memcpy(dst + bytes_read, req.data, effective);
-        bytes_read += effective;
-    }
-
-    return true;
-}
-
-
-/**
  * Initialize the file system by reading out the image from the
  * IDE disk and parse according to VSFS layout.
  */
@@ -76,7 +35,7 @@ void
 filesys_init(void)
 {
     /** Block 0 must be the superblock. */
-    if (!_disk_read((char *) &superblock, 0, sizeof(superblock_t), true))
+    if (!block_read((char *) &superblock, 0, sizeof(superblock_t), true))
         error("filesys_init: failed to read superblock from disk");
 
     /**
@@ -96,10 +55,10 @@ filesys_init(void)
     assert(superblock.data_blocks == 256000);
 
     /** Read in the two bitmaps into memory. */
-    uint32_t num_inodes = superblock.inode_blocks * (BLOCK_SIZE / sizeof(inode_t));
+    uint32_t num_inodes = superblock.inode_blocks * (BLOCK_SIZE / INODE_SIZE);
     uint32_t *inode_bits = (uint32_t *) kalloc(num_inodes / 8);
     bitmap_init(&inode_bitmap, inode_bits, num_inodes);
-    if (!_disk_read((char *) inode_bitmap.bits,
+    if (!block_read((char *) inode_bitmap.bits,
                     superblock.inode_bitmap_start * BLOCK_SIZE,
                     num_inodes / 8, true)) {
         error("filesys_init: failed to read inode bitmap from disk");
@@ -108,13 +67,11 @@ filesys_init(void)
     uint32_t num_dblocks = superblock.data_blocks;
     uint32_t *data_bits = (uint32_t *) kalloc(num_dblocks / 8);
     bitmap_init(&data_bitmap, data_bits, num_dblocks);
-    if (!_disk_read((char *) data_bitmap.bits,
+    if (!block_read((char *) data_bitmap.bits,
                     superblock.data_bitmap_start * BLOCK_SIZE,
                     num_dblocks / 8, true)) {
         error("filesys_init: failed to read data bitmap from disk");
     }
-
-    // TODO: read in root directory
 
     /** Fill open file table and inode table with empty slots. */
     for (size_t i = 0; i < MAX_OPEN_FILES; ++i) {
@@ -124,10 +81,12 @@ filesys_init(void)
         ftable[i].inode = NULL;
         ftable[i].offset = 0;
     }
+    spinlock_init(&ftable_lock, "ftable_lock");
 
     for (size_t i = 0; i < MAX_MEM_INODES; ++i) {
         icache[i].ref_cnt = 0;      /** Indicates UNUSED. */
         icache[i].inumber = 0;
-        icache[i].size = 0;
+        parklock_init(&(icache[i].lock), "inode's parklock");
     }
+    spinlock_init(&icache_lock, "icache_lock");
 }

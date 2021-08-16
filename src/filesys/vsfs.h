@@ -11,6 +11,10 @@
 #include <stdbool.h>
 
 
+/** Root directory must be the 0-th inode. */
+#define ROOT_INUMBER 0
+
+
 /**
  * VSFS of Hux has the following on-disk layout:
  * 
@@ -53,18 +57,49 @@ extern superblock_t superblock;
 #define NUM_DIRECT    16
 #define NUM_INDIRECT1 8
 #define NUM_INDIRECT2 1
-#define FILE_MAX_BLOCKS (NUM_INDIRECT2 * 256*256 + NUM_INDIRECT1 * 256 \
+
+#define UINT32_PB (BLOCK_SIZE / 4)
+#define FILE_MAX_BLOCKS (NUM_INDIRECT2 * UINT32_PB*UINT32_PB \
+                         + NUM_INDIRECT1 * UINT32_PB         \
                          + NUM_DIRECT)
 
 /** On-disk inode structure of exactly 128 bytes in size. */
+#define INODE_SIZE 128
+
+#define INODE_TYPE_EMPTY 0
+#define INODE_TYPE_FILE  1
+#define INODE_TYPE_DIR   2
+
 struct inode {
+    uint32_t type;                  /** 0 = empty, 1 = file, 2 = directory. */
+    uint32_t size;                  /** File size in bytes. */
     uint32_t data0[NUM_DIRECT];     /** Direct blocks. */
     uint32_t data1[NUM_INDIRECT1];  /** 1-level indirect blocks. */
     uint32_t data2[NUM_INDIRECT2];  /** 2-level indirect blocks. */
-    uint32_t size;                  /** File size in bytes. */
-    uint32_t unused[32 - NUM_DIRECT - NUM_INDIRECT1 - NUM_INDIRECT2 - 1];
+    /** Rest bytes are unused. */
 } __attribute__((packed));
 typedef struct inode inode_t;
+
+
+/** Helper macros for calculating on-disk address. */
+#define DISK_ADDR_INODE(i) (superblock.inode_start * BLOCK_SIZE + (i) * INODE_SIZE)
+#define DISK_ADDR_DATA_BLOCK(d) ((superblock.data_start + (d)) * BLOCK_SIZE)
+
+
+/**
+ * Directory entry structure. A directory's data is simply a contiguous
+ * array of such 128-bytes entry structures.
+ */
+#define DENTRY_SIZE 128
+
+#define MAX_FILENAME 120
+
+struct dentry {
+    uint32_t inumber;   /** 0 means not used (root path directory "/" can't be in
+                            any directory without the support of linking). */
+    char filename[DENTRY_SIZE - sizeof(uint32_t)];      /** String name. */
+} __attribute__((packed));
+typedef struct dentry dentry_t;
 
 
 void filesys_init();
