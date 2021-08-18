@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 
 #
-# The mkfs script which builds a VSFS file system initial image
+# The mkfs script which formats a VSFS file system initial image
 # according to the VSFS layout definiton at `src/filesys/vsfs.h`.
 #
-# Copies those user program executables in.
+# Copies the user program executables under 'user/' (except `init`) in.
 #
 
 
@@ -122,22 +122,15 @@ def add_data_block(block):
     curr_data_block += 1
     return addr
 
-def add_inode(file_size, data_blocks, inode_type, is_root_dir):
+def add_inode(file_size, data_blocks, inode_type, inumber):
     """
-    Put an inode into a free inode slot, given file size and allocated
+    Put an inode into given inode slot, also given file size and allocated
     data block addresses.
-    Returns the inode number (slot index) allocated.
     """
     assert file_size > (len(data_blocks) - 1) * BLOCK_SIZE
     assert file_size <= len(data_blocks) * BLOCK_SIZE
     assert inode_type == INODE_TYPE_FILE or inode_type == INODE_TYPE_DIR
 
-    global curr_inumber
-    if is_root_dir:
-        inumber = 0
-    else:
-        inumber = curr_inumber
-        curr_inumber += 1
     addr = INODE_START * BLOCK_SIZE + inumber * INODE_SIZE
     
     put_uint32(addr,     inode_type)
@@ -189,9 +182,7 @@ def add_inode(file_size, data_blocks, inode_type, is_root_dir):
                    + (chopped_idx//(UINT32_PB**2))*4,
                    indirect1_addr)
 
-    return inumber
-
-def add_file(content):
+def add_file(content, my_inumber):
     """
     Add a regular file into the file system image.
     Returns the inumber assigned to this file.
@@ -201,9 +192,10 @@ def add_file(content):
         block_end = min(block_beg + BLOCK_SIZE, len(content))
         data_blocks.append(add_data_block(content[block_beg:block_end]))
 
-    return add_inode(len(content), data_blocks, INODE_TYPE_FILE, False)
+    return add_inode(len(content), data_blocks, INODE_TYPE_FILE,
+                     my_inumber)
 
-def add_dir(content, is_root_dir):
+def add_dir(content, my_inumber, parent_inumber):
     """
     Add a directory into the file system image. All things inside this
     directory must have been added.
@@ -211,6 +203,10 @@ def add_dir(content, is_root_dir):
     """
     names = list(content.keys())
     inumbers = list(map(lambda val: val[0], content.values()))
+
+    # Add in default '.' ane '..' entries as the first two.
+    names = [".", ".."] + names
+    inumbers = [my_inumber, parent_inumber] + inumbers
 
     data_blocks = []
     idx = 0
@@ -220,19 +216,20 @@ def add_dir(content, is_root_dir):
             if idx >= len(names):
                 break
             if len(names[idx]) > MAX_FILENAME:
-                print("Error: file name '{}' exceeds max length", names[idx])
+                print("Error: file name '{}' exceeds max length".format(names[idx]))
                 exit(1)
-            if inumbers[idx] < 1 or inumbers[idx] >= INODE_BLOCKS * INODES_PB:
-                print("Error: detected invalid inumber {}", inumbers[idx])
+            if inumbers[idx] < 0 or inumbers[idx] >= INODE_BLOCKS * INODES_PB:
+                print("Error: detected invalid inumber {}".format(inumbers[idx]))
                 exit(1)
-            dir_block[i:i+4] = uint32_to_bytes(inumbers[idx])
+            dir_block[i:i+4]   = uint32_to_bytes(1)
+            dir_block[i+4:i+8] = uint32_to_bytes(inumbers[idx])
             name_bytes = string_to_bytes(names[idx])
-            dir_block[i+4:i+4+len(name_bytes)] = name_bytes
+            dir_block[i+8:i+8+len(name_bytes)] = name_bytes
             idx += 1
         data_blocks.append(add_data_block(dir_block))
 
     return add_inode(len(names) * DENTRY_SIZE, data_blocks, INODE_TYPE_DIR,
-                     is_root_dir)
+                     my_inumber)
 
 
 def gen_bitmaps():
@@ -270,7 +267,7 @@ def gen_bitmaps():
 
 def build_dtree(bins):
     """
-    Build the directory tree out of what's under `user/`. The dtree is a
+    Build the directory tree out of what's under `user/`. The `dtree` is a
     dict of:
       string name -> 2-list [inumber, element]
     
@@ -278,6 +275,15 @@ def build_dtree(bins):
       - Raw bytes for regular file
       - A `dict` for directory, which recurses on
     """
+    def next_inumber():
+        """
+        Allocate the next available inumber.
+        """
+        global curr_inumber
+        inumber = curr_inumber
+        curr_inumber += 1
+        return inumber
+
     for b in bins:
         bpath = Path(b)
         if not bpath.is_file():
@@ -298,38 +304,37 @@ def build_dtree(bins):
         curr_dir = dtree
         for d in parents:
             if d not in curr_dir:
-                curr_dir[d] = [-1, dict()]
+                curr_dir[d] = [next_inumber(), dict()]
             curr_dir = curr_dir[d][1]
 
         with bpath.open(mode='br') as bfile:
-            curr_dir[binary] = [-1, bytearray(bfile.read())]
+            curr_dir[binary] = [next_inumber(), bytearray(bfile.read())]
 
 def solidize_dtree():
     """
     Solidize the directory tree into the file system image bytearray.
+    Runs a pre-order depth-first search (pre-DFS) over the tree, so that
+    files inside a directory will be added after the directory.
     """
-    def solidize_elem(elem, is_root_dir):
+    def solidize_elem(elem, my_inumber, parent_inumber):
         """
         Recursively solidizes an element. If ELEM is a bytearray, it is
         a regular file. If ELEM is a dict, it is a directory and should
         recurse deeper if the directory contains things.
-
-        Returns the inumber solidized for this element.
         """
         if isinstance(elem, bytearray):
-            return add_file(elem)
+            add_file(elem, my_inumber)
         elif isinstance(elem, dict):
-            # Do children first so that they get assigned an inumber.
+            # First put the directory.
+            add_dir(elem, my_inumber, parent_inumber)
+            # Then the children so that a sub-directory would know '..'s inumber.
             for key, val in elem.items():
-                inumber = solidize_elem(val[1], False)
-                val[0] = inumber
-            # Then put the directory.
-            return add_dir(elem, is_root_dir)
+                solidize_elem(val[1], val[0], my_inumber)
         else:
             print("Error: unrecognized element type {}".format(type(content)))
             exit(1)
 
-    solidize_elem(dtree, True)
+    solidize_elem(dtree, 0, 0)      # "/"s '..' also points to "/"
 
 
 def main():

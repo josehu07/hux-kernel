@@ -18,14 +18,14 @@
 #include "../process/scheduler.h"
 
 
-/** int8_t getpid(void); */
+/** int32_t getpid(void); */
 int32_t
 syscall_getpid(void)
 {
     return running_proc()->pid;
 }
 
-/** int8_t fork(uint8_t timeslice); */
+/** int32_t fork(uint32_t timeslice); */
 int32_t
 syscall_fork(void)
 {
@@ -51,7 +51,7 @@ syscall_exit(void)
     return 0;   /** Not reached. */
 }
 
-/** int8_t sleep(uint32_t millisecs); */
+/** int32_t sleep(uint32_t millisecs); */
 int32_t
 syscall_sleep(void)
 {
@@ -66,14 +66,14 @@ syscall_sleep(void)
     return 0;
 }
 
-/** int8_t wait(void); */
+/** int32_t wait(void); */
 int32_t
 syscall_wait(void)
 {
     return process_wait();
 }
 
-/** int8_t kill(int8_t pid); */
+/** int32_t kill(int32_t pid); */
 int32_t
 syscall_kill(void)
 {

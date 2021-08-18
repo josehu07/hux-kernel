@@ -21,6 +21,8 @@
 #include "../memory/gdt.h"
 #include "../memory/slabs.h"
 
+#include "../filesys/file.h"
+
 
 /** Process table - list of PCB slots. */
 process_t ptable[MAX_PROCS];
@@ -96,6 +98,8 @@ _alloc_new_process(void)
     proc->target_tick = 0;
     proc->wait_req  = NULL;
     proc->wait_lock = NULL;
+    for (size_t i = 0; i < MAX_FILES_PER_PROC; ++i)
+        proc->files[i] = NULL;
 
     spinlock_release(&ptable_lock);
 
@@ -167,7 +171,7 @@ initproc_init(void)
 
     uint32_t vaddr_btm = 0;                     /** Kernel-mapped. */
     while (vaddr_btm < PHYS_MAX) {
-        pte_t *pte = paging_walk_pgdir(proc->pgdir, vaddr_btm, true, false);
+        pte_t *pte = paging_walk_pgdir(proc->pgdir, vaddr_btm, true);
         assert(pte != NULL);
         paging_map_kpage(pte, vaddr_btm);
 
@@ -176,7 +180,7 @@ initproc_init(void)
     
     uint32_t vaddr_elf = USER_BASE;             /** ELF binary. */
     while (elf_curr < elf_end) {
-        pte_t *pte = paging_walk_pgdir(proc->pgdir, vaddr_elf, true, false);
+        pte_t *pte = paging_walk_pgdir(proc->pgdir, vaddr_elf, true);
         assert(pte != NULL);
         uint32_t paddr = paging_map_upage(pte, true);
         assert(paddr != 0);
@@ -190,7 +194,7 @@ initproc_init(void)
     }
 
     while (vaddr_elf < HEAP_BASE) {             /** Rest of ELF region. */
-        pte_t *pte = paging_walk_pgdir(proc->pgdir, vaddr_elf, true, false);
+        pte_t *pte = paging_walk_pgdir(proc->pgdir, vaddr_elf, true);
         assert(pte != NULL);
         uint32_t paddr = paging_map_upage(pte, true);
         assert(paddr != 0);
@@ -199,7 +203,7 @@ initproc_init(void)
     }
     
     uint32_t vaddr_top = USER_MAX - PAGE_SIZE;  /** Top stack page. */
-    pte_t *pte_top = paging_walk_pgdir(proc->pgdir, vaddr_top, true, false);
+    pte_t *pte_top = paging_walk_pgdir(proc->pgdir, vaddr_top, true);
     assert(pte_top != NULL);
     uint32_t paddr_top = paging_map_upage(pte_top, true);
     assert(paddr_top != 0);
@@ -217,6 +221,11 @@ initproc_init(void)
     proc->heap_high = HEAP_BASE;
 
     proc->timeslice = 1;
+
+    /** Initially at root directory '/'. */
+    proc->cwd = inode_get_at_boot(ROOT_INUMBER);
+    if (proc->cwd == NULL)
+        error("initproc_init: failed to get inode of root directory");
 
     /** Set process state to READY so the scheduler can pick it up. */
     initproc = proc;
@@ -270,7 +279,7 @@ process_fork(uint8_t timeslice)
 
     uint32_t vaddr_btm = 0;     /** Kernel-mapped. */
     while (vaddr_btm < PHYS_MAX) {
-        pte_t *pte = paging_walk_pgdir(child->pgdir, vaddr_btm, true, false);
+        pte_t *pte = paging_walk_pgdir(child->pgdir, vaddr_btm, true);
         if (pte == NULL) {
             warn("fork: cannot allocate level-2 table, out of kheap memory?");
             paging_unmap_range(child->pgdir, 0, vaddr_btm); // Maybe use goto.
@@ -306,6 +315,18 @@ process_fork(uint8_t timeslice)
     child->heap_high = parent->heap_high;
 
     child->timeslice = timeslice;
+
+    /** Child shares the same set of current open files with parent. */
+    for (size_t i = 0; i < MAX_FILES_PER_PROC; ++i) {
+        if (parent->files[i] != NULL) {
+            child->files[i] = parent->files[i];
+            file_ref(parent->files[i]);
+        }
+    }
+
+    /** Child inherits parent's working directory. */
+    child->cwd = parent->cwd;
+    inode_ref(parent->cwd);
 
     /**
      * Copy the trap state of parent to the child. Child should resume
@@ -379,6 +400,17 @@ process_exit(void)
 {
     process_t *proc = running_proc();
     assert(proc != initproc);
+
+    /** Close all open files. */
+    for (size_t i = 0; i < MAX_FILES_PER_PROC; ++i) {
+        if (proc->files[i] != NULL) {
+            file_put(proc->files[i]);
+            proc->files[i] = NULL;
+        }
+    }
+
+    inode_put(proc->cwd);
+    proc->cwd = NULL;
 
     spinlock_acquire(&ptable_lock);
 

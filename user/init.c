@@ -51,19 +51,54 @@ _shell_temp_main(void)
 {
     _shell_welcome_logo();
 
-    char cmd_buf[128];
-    memset(cmd_buf, 0, 128);
+    // char cmd_buf[128];
+    // memset(cmd_buf, 0, 128);
 
-    while (1) {
-        printf("temp shell $ ");
+    // while (1) {
+    //     printf("temp shell $ ");
         
-        if (kbdstr(cmd_buf, 128) < 0)
-            warn("shell: failed to get keyboard string");
-        else
-            printf("%s", cmd_buf);
+    //     if (kbdstr(cmd_buf, 128) < 0)
+    //         warn("shell: failed to get keyboard string");
+    //     else
+    //         printf("%s", cmd_buf);
 
-        memset(cmd_buf, 0, 128);
+    //     memset(cmd_buf, 0, 128);
+    // }
+
+    char dirname[128] = "temp";
+    char filepath[128] = "temp/test.txt";
+    char filename[128] = "test.txt";
+
+    printf("[P] Created dir '%s' -> %d\n", dirname, create(dirname, CREATE_DIR));
+    printf("[P] Created file '%s' -> %d\n", filepath, create(filepath, CREATE_FILE));
+    printf("[P] Changed cwd to '%s' -> %d\n", dirname, chdir(dirname));
+
+    int8_t pid = fork(0);
+    assert(pid >= 0);
+
+    if (pid == 0) {
+        // Child.    
+        int8_t fd = open(filename, OPEN_WR);
+        printf("[C] Opened file '%s' -> %d\n", filename, fd);
+        printf("[C] Written to fd %d -> %d\n", fd, write(fd, "AAAAA", 5));
+        printf("    src: %s\n", "AAAAA");
+        exit();
+
+    } else {
+        // Parent.
+        assert(wait() == pid);
+        printf("[P] Changed cwd to '%s' -> %d\n", "./..", chdir("./.."));
+        int8_t fd = open(filepath, OPEN_RD);
+        printf("[P] Opened file '%s' -> %d\n", filepath, fd);
+        char buf[6] = {0};
+        printf("[P] Read from fd %d -> %d\n", fd, read(fd, buf, 5));
+        printf("    dst: %s\n", buf);
+        printf("[P] Closing fd %d -> %d\n", fd, close(fd));
+        printf("[P] Removing file '%s' -> %d\n", filepath, remove(filepath));
+        printf("[P] Removing dir '%s' -> %d\n", dirname, remove(dirname));
     }
+
+    printf("Files done!\n");
 
     // int8_t i;
 

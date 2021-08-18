@@ -28,6 +28,13 @@
 #define SYSCALL_UPTIME  8
 #define SYSCALL_KBDSTR  9
 #define SYSCALL_SETHEAP 10
+#define SYSCALL_OPEN    11
+#define SYSCALL_CLOSE   12
+#define SYSCALL_CREATE  13
+#define SYSCALL_REMOVE  14
+#define SYSCALL_READ    15
+#define SYSCALL_WRITE   16
+#define SYSCALL_CHDIR   17
 
 
 /**

@@ -63,7 +63,7 @@ _kalloc_temp(size_t size, bool page_align)
  * kernel heap.
  */
 static pte_t *
-paging_alloc_pgtab(pde_t *pde, bool boot)
+_paging_alloc_pgtab(pde_t *pde, bool boot)
 {
     pte_t *pgtab = NULL;
     if (boot)
@@ -83,13 +83,25 @@ paging_alloc_pgtab(pde_t *pde, bool boot)
     return pgtab;
 }
 
+static pte_t *
+paging_alloc_pgtab(pde_t *pde)
+{
+    return _paging_alloc_pgtab(pde, false);
+}
+
+static pte_t *
+paging_alloc_pgtab_at_boot(pde_t *pde)
+{
+    return _paging_alloc_pgtab(pde, true);
+}
+
 /**
  * Walk a 2-level page table for a virtual address to locate its PTE.
  * If `alloc` is true, then when a level-2 table is needed but not
  * allocated yet, will perform the allocation.
  */
-pte_t *
-paging_walk_pgdir(pde_t *pgdir, uint32_t vaddr, bool alloc, bool boot)
+static pte_t *
+_paging_walk_pgdir(pde_t *pgdir, uint32_t vaddr, bool alloc, bool boot)
 {
     size_t pde_idx = ADDR_PDE_INDEX(vaddr);
     size_t pte_idx = ADDR_PTE_INDEX(vaddr);
@@ -107,13 +119,26 @@ paging_walk_pgdir(pde_t *pgdir, uint32_t vaddr, bool alloc, bool boot)
     if (!alloc)
         return NULL;
 
-    pte_t *pgtab = paging_alloc_pgtab(&pgdir[pde_idx], boot);
+    pte_t *pgtab = boot ? paging_alloc_pgtab_at_boot(&pgdir[pde_idx])
+                        : paging_alloc_pgtab(&pgdir[pde_idx]);
     if (pgtab == NULL) {
         warn("walk_pgdir: cannot alloc pgtab, out of kheap memory?");
         return NULL;
     }
 
     return &pgtab[pte_idx];
+}
+
+pte_t *
+paging_walk_pgdir(pde_t *pgdir, uint32_t vaddr, bool alloc)
+{
+    return _paging_walk_pgdir(pgdir, vaddr, alloc, false);
+}
+
+pte_t *
+paging_walk_pgdir_at_boot(pde_t *pgdir, uint32_t vaddr, bool alloc)
+{
+    return _paging_walk_pgdir(pgdir, vaddr, alloc, true);
 }
 
 /** Dealloc all the kernal heap pages used in a user page directory. */
@@ -248,7 +273,7 @@ paging_copy_range(pde_t *dstdir, pde_t *srcdir, uint32_t va_start, uint32_t va_e
          * allocate one for it on kernel heap.
          */
         if (dstdir[pde_idx].present == 0) {
-            dsttab = paging_alloc_pgtab(&dstdir[pde_idx], false);
+            dsttab = paging_alloc_pgtab(&dstdir[pde_idx]);
             if (dsttab == NULL) {
                 warn("copy_range: cannot alloc pgtab, out of kheap memory?");
                 paging_unmap_range(dstdir, va_start, va_end);
@@ -324,7 +349,7 @@ page_fault_handler(interrupt_state_t *state)
 
         uint32_t vaddr;
         for (vaddr = new_btm; vaddr < old_btm; vaddr += PAGE_SIZE) {
-            pte_t *pte = paging_walk_pgdir(proc->pgdir, vaddr, true, false);
+            pte_t *pte = paging_walk_pgdir(proc->pgdir, vaddr, true);
             if (pte == NULL) {
                 warn("page_fault: cannot walk pgdir, out of kheap memory?");
                 break;
@@ -368,7 +393,7 @@ paging_init(void)
      * The frame bitmap also needs space, so allocate space for it in
      * our kernel heap. Clear it to zeros.
      */
-    uint32_t *frame_bits = (uint32_t *) _kalloc_temp(NUM_FRAMES / 8, false);
+    uint8_t *frame_bits = (uint8_t *) _kalloc_temp(NUM_FRAMES / 8, false);
     bitmap_init(&frame_bitmap, frame_bits, NUM_FRAMES);
 
     /**
@@ -391,7 +416,7 @@ paging_init(void)
     while (addr < KMEM_MAX) {
         uint32_t frame_num = bitmap_alloc(&frame_bitmap);
         assert(frame_num < NUM_FRAMES);
-        pte_t *pte = paging_walk_pgdir(kernel_pgdir, addr, true, true);
+        pte_t *pte = paging_walk_pgdir_at_boot(kernel_pgdir, addr, true);
         assert(pte != NULL);
 
         /** Update the bits in this PTE. */
@@ -408,7 +433,7 @@ paging_init(void)
      * so it could access any physical address directly.
      */
     while (addr < PHYS_MAX) {
-        pte_t *pte = paging_walk_pgdir(kernel_pgdir, addr, true, true);
+        pte_t *pte = paging_walk_pgdir_at_boot(kernel_pgdir, addr, true);
         assert(pte != NULL);
 
         /** Update the bits in this PTE. */

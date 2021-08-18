@@ -1,5 +1,7 @@
 /**
  * Very simple file system (VSFS) data structures & Layout.
+ *
+ * This part borrows code heavily from xv6.
  */
 
 
@@ -9,6 +11,9 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
+
+#include "../common/bitmap.h"
 
 
 /** Root directory must be the 0-th inode. */
@@ -19,9 +24,9 @@
  * VSFS of Hux has the following on-disk layout:
  * 
  *   - Block 0 is the superblock holding meta information of the FS;
- *   - Block 1 is the inode slots bitmap;
- *   - Block 2 is the data blocks bitmap;
- *   - Blocks 3 - 6143 (upto 6 MiB offset) are inode blocks;
+ *   - Block 1~6 are the inode slots bitmap;
+ *   - Block 7~38 are the data blocks bitmap;
+ *   - Blocks 39~6143 (upto 6 MiB offset) are inode blocks;
  *   - All the rest blocks up to 256 MiB are data blocks.
  * 
  *   * Block size is 1 KiB = 2 disk sectors
@@ -45,14 +50,17 @@ struct superblock {
 } __attribute__((packed));
 typedef struct superblock superblock_t;
 
-/** Extern the superblock for info printing. */
+/** Extern to `file.c`. */
 extern superblock_t superblock;
+
+extern bitmap_t inode_bitmap;
+extern bitmap_t data_bitmap;
 
 
 /**
  * An inode points to 16 direct blocks, 8 singly-indirect blocks, and
  * 1 doubly-indirect block. With an FS block size of 1KB, the maximum
- * file size = 1 * 256^2 + 8 * 256 + 16 KiB = 66 MiB 16 KiB.
+ * file size = 1 * 256^2 + 8 * 256 + 16 KiB = 66MiB 16KiB.
  */
 #define NUM_DIRECT    16
 #define NUM_INDIRECT1 8
@@ -92,17 +100,31 @@ typedef struct inode inode_t;
  */
 #define DENTRY_SIZE 128
 
-#define MAX_FILENAME 120
+#define MAX_FILENAME 100
 
 struct dentry {
-    uint32_t inumber;   /** 0 means not used (root path directory "/" can't be in
-                            any directory without the support of linking). */
-    char filename[DENTRY_SIZE - sizeof(uint32_t)];      /** String name. */
+    uint32_t valid;                     /** 0 = unused, 1 = valid. */
+    uint32_t inumber;                   /** Inumber of the file. */
+    char filename[DENTRY_SIZE - 8];     /** String name. */
 } __attribute__((packed));
 typedef struct dentry dentry_t;
 
 
 void filesys_init();
+
+int8_t filesys_open(char *path, uint32_t mode);
+bool filesys_close(int8_t fd);
+
+bool filesys_create(char *path, uint32_t mode);
+bool filesys_remove(char *path);
+
+int32_t filesys_read(int8_t fd, char *dst, size_t len);
+int32_t filesys_write(int8_t fd, char *dst, size_t len);
+
+bool filesys_chdir(char *path);
+
+bool inode_bitmap_update(uint32_t slot_no);
+bool data_bitmap_update(uint32_t slot_no);
 
 
 #endif

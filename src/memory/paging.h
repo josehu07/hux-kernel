@@ -90,7 +90,8 @@ extern pde_t *kernel_pgdir;
 
 void paging_init();
 
-pte_t *paging_walk_pgdir(pde_t *pgdir, uint32_t vaddr, bool alloc, bool boot);
+pte_t *paging_walk_pgdir(pde_t *pgdir, uint32_t vaddr, bool alloc);
+pte_t *paging_walk_pgdir_at_boot(pde_t *pgdir, uint32_t vaddr, bool alloc);
 void paging_destroy_pgdir(pde_t *pgdir);
 
 uint32_t paging_map_upage(pte_t *pte, bool writable);

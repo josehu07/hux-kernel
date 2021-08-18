@@ -16,7 +16,7 @@
 #include "../process/scheduler.h"
 
 
-/** int8_t setheap(uint32_t new_top); */
+/** int32_t setheap(uint32_t new_top); */
 int32_t
 syscall_setheap(void)
 {
@@ -43,7 +43,7 @@ syscall_setheap(void)
     for (uint32_t vaddr = heap_page_high;
          vaddr < new_top;
          vaddr += PAGE_SIZE) {
-        pte_t *pte = paging_walk_pgdir(proc->pgdir, vaddr, true, false);
+        pte_t *pte = paging_walk_pgdir(proc->pgdir, vaddr, true);
         if (pte == NULL) {
             warn("setheap: cannot walk pgdir, out of kheap memory?");
             paging_unmap_range(proc->pgdir, heap_page_high, vaddr);

@@ -33,6 +33,8 @@ __attribute__((unused))
 static void
 _print_free_list_state(void)
 {
+    spinlock_acquire(&kheap_lock);
+
     fl_header_t *header_curr = bottom_most_header;
 
     info("Kheap free-list length = %d, last_search = %p, nodes:",\
@@ -43,6 +45,8 @@ _print_free_list_state(void)
 
         header_curr = (fl_header_t *) header_curr->next;
     } while (header_curr != bottom_most_header);
+
+    spinlock_release(&kheap_lock);
 }
 
 
@@ -124,8 +128,9 @@ kalloc(size_t size)
         header_curr->free = false;
         uint32_t object = HEADER_TO_OBJECT((uint32_t) header_curr);
 
-        // _print_free_list_state();
         spinlock_release(&kheap_lock);
+        
+        // _print_free_list_state();
         return object;
 
     } while (header_curr != header_begin);
@@ -248,8 +253,8 @@ kfree(void *addr)
         }
     }
 
-    // _print_free_list_state();
     spinlock_release(&kheap_lock);
+    // _print_free_list_state();
 }
 
 

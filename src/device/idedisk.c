@@ -229,9 +229,15 @@ idedisk_do_req(block_request_t *req)
         _ide_start_req(req);
 
     /** Wait for this request to have been served. */
+    spinlock_acquire(&ptable_lock);
+    spinlock_release(&ide_lock);
+
     proc->wait_req = req;
     process_block(ON_IDEDISK);
     proc->wait_req = NULL;
+
+    spinlock_release(&ptable_lock);
+    spinlock_acquire(&ide_lock);
 
     /**
      * Could be re=scheduld when an IDE interrupt comes saying that this

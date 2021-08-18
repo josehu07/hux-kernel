@@ -42,7 +42,12 @@ struct block_request {
 typedef struct block_request block_request_t;
 
 
-bool block_read(char *dst, uint32_t disk_addr, uint32_t len, bool boot);
+bool block_read(char *dst, uint32_t disk_addr, uint32_t len);
+bool block_read_at_boot(char *dst, uint32_t disk_addr, uint32_t len);
+bool block_write(char *src, uint32_t disk_addr, uint32_t len);
+
+uint32_t block_alloc();
+void block_free(uint32_t disk_addr);
 
 
 #endif

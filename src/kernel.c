@@ -114,7 +114,6 @@ kernel_main(unsigned long magic, unsigned long addr)
     _init_message("initializing CPU state & process structures");
     cpu_init();
     process_init();
-    initproc_init();
     _init_message_ok();
     info("maximum number of processes: %d", MAX_PROCS);
 
@@ -126,6 +125,7 @@ kernel_main(unsigned long magic, unsigned long addr)
     /** Initialize the VSFS file system from disk. */
     _init_message("initializing VSFS file system from disk");
     filesys_init();
+    initproc_init();
     _init_message_ok();
     info("file system block size: %u KiB", BLOCK_SIZE);
     info("file system image has %u blocks", superblock.fs_blocks);
@@ -138,7 +138,7 @@ kernel_main(unsigned long magic, unsigned long addr)
      * process which is `init` and context switch to it, then never
      * switching back.
      */
-    // terminal_clear();
+    terminal_clear();
     scheduler();
 
     error("CPU leaves the scheduler loop, should not happen");

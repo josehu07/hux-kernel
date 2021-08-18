@@ -639,7 +639,7 @@ static void
 _vprintf(vga_color_t fg, const char *fmt, va_list va)
 {
     _vsnprintf(output_buf, OUTPUT_BUF_SIZE, fmt, va);
-    tprint(fg, output_buf);
+    tprint((uint32_t) fg, output_buf);
     memset(output_buf, 0, OUTPUT_BUF_SIZE);
 }
 

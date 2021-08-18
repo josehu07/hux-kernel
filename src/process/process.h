@@ -18,6 +18,7 @@
 #include "../memory/paging.h"
 
 #include "../filesys/block.h"
+#include "../filesys/file.h"
 
 
 /** Max number of processes at any time. */
@@ -68,22 +69,24 @@ typedef enum process_state process_state_t;
 
 /** Process control block (PCB). */
 struct process {
-    char name[16];                  /** Process name. */
-    int8_t pid;                     /** Process ID. */
-    process_context_t *context;     /** Registers context. */
-    process_state_t state;          /** Process state */
-    process_block_on_t block_on;    /** If state is BLOCKED, the reason. */
-    pde_t *pgdir;                   /** Process page directory. */
-    uint32_t kstack;                /** Bottom of its kernel stack. */
-    interrupt_state_t *trap_state;  /** Trap state of latest trap. */
-    uint32_t stack_low;             /** Current bottom of stack pages. */
-    uint32_t heap_high;             /** Current top of heap pages. */
-    struct process *parent;         /** Parent process. */
-    bool killed;                    /** True if should exit. */
-    uint8_t timeslice;              /** Timeslice length for scheduling. */
-    uint32_t target_tick;           /** Target wake up timer tick. */
-    block_request_t *wait_req;      /** Waiting on this block request. */
-    parklock_t *wait_lock;          /** Waiting on this parking lock. */
+    char name[16];                      /** Process name. */
+    int8_t pid;                         /** Process ID. */
+    process_context_t *context;         /** Registers context. */
+    process_state_t state;              /** Process state */
+    process_block_on_t block_on;        /** If state is BLOCKED, the reason. */
+    pde_t *pgdir;                       /** Process page directory. */
+    uint32_t kstack;                    /** Bottom of its kernel stack. */
+    interrupt_state_t *trap_state;      /** Trap state of latest trap. */
+    uint32_t stack_low;                 /** Current bottom of stack pages. */
+    uint32_t heap_high;                 /** Current top of heap pages. */
+    struct process *parent;             /** Parent process. */
+    bool killed;                        /** True if should exit. */
+    uint8_t timeslice;                  /** Timeslice length for scheduling. */
+    uint32_t target_tick;               /** Target wake up timer tick. */
+    block_request_t *wait_req;          /** Waiting on this block request. */
+    parklock_t *wait_lock;              /** Waiting on this parking lock. */
+    file_t *files[MAX_FILES_PER_PROC];  /** File descriptor -> open file. */
+    mem_inode_t *cwd;                   /** Current working directory. */
 };
 typedef struct process process_t;
 

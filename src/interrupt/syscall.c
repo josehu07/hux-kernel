@@ -23,6 +23,8 @@
 #include "../process/scheduler.h"
 #include "../process/sysproc.h"
 
+#include "../filesys/sysfile.h"
+
 
 /** Array of individual handlers: void -> int32_t functions. */
 static syscall_t syscall_handlers[] = {
@@ -35,7 +37,14 @@ static syscall_t syscall_handlers[] = {
     [SYSCALL_TPRINT]    syscall_tprint,
     [SYSCALL_UPTIME]    syscall_uptime,
     [SYSCALL_KBDSTR]    syscall_kbdstr,
-    [SYSCALL_SETHEAP]   syscall_setheap
+    [SYSCALL_SETHEAP]   syscall_setheap,
+    [SYSCALL_OPEN]      syscall_open,
+    [SYSCALL_CLOSE]     syscall_close,
+    [SYSCALL_CREATE]    syscall_create,
+    [SYSCALL_REMOVE]    syscall_remove,
+    [SYSCALL_READ]      syscall_read,
+    [SYSCALL_WRITE]     syscall_write,
+    [SYSCALL_CHDIR]     syscall_chdir
 };
 
 #define NUM_SYSCALLS ((int32_t) (sizeof(syscall_handlers) / sizeof(syscall_t)))
