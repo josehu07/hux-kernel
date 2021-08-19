@@ -122,6 +122,9 @@ int32_t filesys_read(int8_t fd, char *dst, size_t len);
 int32_t filesys_write(int8_t fd, char *dst, size_t len);
 
 bool filesys_chdir(char *path);
+bool filesys_getcwd(char *buf, size_t limit);
+
+bool filesys_exec(char *path, char **argv);
 
 bool inode_bitmap_update(uint32_t slot_no);
 bool data_bitmap_update(uint32_t slot_no);

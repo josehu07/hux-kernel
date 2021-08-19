@@ -9,6 +9,7 @@
 #include "sysfile.h"
 #include "vsfs.h"
 #include "file.h"
+#include "exec.h"
 
 #include "../common/debug.h"
 #include "../common/string.h"
@@ -142,4 +143,53 @@ syscall_chdir(void)
     if (!filesys_chdir(path))
         return SYS_FAIL_RC;
     return 0;
+}
+
+/** int32_t getcwd(char *buf, uint32_t limit); */
+int32_t
+syscall_getcwd(void)
+{
+    char *buf;
+    uint32_t limit;
+
+    if (!sysarg_get_uint(1, &limit))
+        return SYS_FAIL_RC;
+    if (limit < 2)
+        return SYS_FAIL_RC;
+    if (!sysarg_get_mem(0, &buf, limit))
+        return SYS_FAIL_RC;
+
+    if (!filesys_getcwd(buf, limit))
+        return SYS_FAIL_RC;
+    return 0;
+}
+
+/** int32_t exec(char *path, char **argv); */
+int32_t
+syscall_exec(void)
+{
+    char *path;
+    uint32_t uargv;
+
+    if (!sysarg_get_str(0, &path))
+        return SYS_FAIL_RC;
+    if (!sysarg_get_uint(1, &uargv))
+        return SYS_FAIL_RC;
+
+    char *argv[MAX_EXEC_ARGS];
+    memset(argv, 0, MAX_EXEC_ARGS * sizeof(char *));
+    for (size_t argc = 0; argc < MAX_EXEC_ARGS; ++argc) {
+        uint32_t uarg;
+        if (!sysarg_addr_uint(uargv + 4 * argc, &uarg))
+            return SYS_FAIL_RC;
+        if (uarg == 0) {    /** Reached end of list. */
+            argv[argc] = 0;
+            if (!filesys_exec(path, argv))
+                return SYS_FAIL_RC;
+            return 0;
+        }
+        if (sysarg_addr_str(uarg, &argv[argc]) < 0)
+            return SYS_FAIL_RC;
+    }
+    return SYS_FAIL_RC;
 }

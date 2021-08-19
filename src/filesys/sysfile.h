@@ -26,6 +26,8 @@ int32_t syscall_remove();
 int32_t syscall_read();
 int32_t syscall_write();
 int32_t syscall_chdir();
+int32_t syscall_getcwd();
+int32_t syscall_exec();
 
 
 #endif

@@ -18,8 +18,8 @@ S_SOURCES=$(shell find ./src/ -name "*.s")
 S_OBJECTS=$(patsubst %.s, %.o, $(S_SOURCES))
 
 INIT_SOURCE=./user/init.c
-INIT_OBJECT=./user/init.o
-INIT_LINKED=./user/init.out
+INIT_OBJECT=./user/init.c.o
+INIT_LINKED=./user/init.bin
 INIT_BINARY=./user/init
 
 ULIB_C_SOURCES=$(shell find ./user/lib/ -name "*.c")
@@ -28,8 +28,10 @@ ULIB_C_OBJECTS=$(patsubst %.c, %.o, $(ULIB_C_SOURCES))
 ULIB_S_SOURCES=$(shell find ./user/lib/ -name "*.s")
 ULIB_S_OBJECTS=$(patsubst %.s, %.o, $(ULIB_S_SOURCES))
 
-USER_SOURCES=$(filter-out $(INIT_SOURCE), $(shell find ./user/ -maxdepth 1 -name "*.c"))
-USER_BINARYS=$(patsubst %.c, %.bin, $(USER_SOURCES))
+USER_SOURCES_ALL=$(shell find ./user/ -name "*.c" ! -path "./user/lib/*")
+USER_SOURCES=$(filter-out $(INIT_SOURCE), $(USER_SOURCES_ALL))
+USER_OBJECTS=$(patsubst %.c, %.c.o, $(USER_SOURCES))
+USER_LINKEDS=$(patsubst %.c, %.bin, $(USER_SOURCES))
 
 FILESYS_IMG=vsfs.img
 
@@ -59,7 +61,7 @@ HUX_MSG="[--Hux->]"
 
 
 ALL_DEPS := $(S_OBJECTS) $(C_OBJECTS)
-ALL_DEPS += $(ULIB_S_OBJECTS) $(ULIB_C_OBJECTS) $(USER_BINARYS) initproc
+ALL_DEPS += $(ULIB_S_OBJECTS) $(ULIB_C_OBJECTS) $(USER_LINKEDS) initproc
 ALL_DEPS += filesys kernel verify update
 all: $(ALL_DEPS)
 
@@ -88,7 +90,7 @@ $(ULIB_C_OBJECTS): %.o: %.c
 	@echo $(HUX_MSG) "Compiling user lib C code '$<'..."
 	$(CC) $(C_FLAGS_USER) -o $@ $<
 
-$(USER_BINARYS): %.bin: %.c $(ULIB_S_OBJECTS) $(ULIB_C_OBJECTS)
+$(USER_LINKEDS): %.bin: %.c $(ULIB_S_OBJECTS) $(ULIB_C_OBJECTS)
 	@echo
 	@echo $(HUX_MSG) "Compiling & linking user program '$<'..."
 	$(CC) $(C_FLAGS_USER) -o $<.o $<
@@ -110,8 +112,9 @@ initproc: $(INIT_SOURCE) $(ULIB_S_OBJECTS) $(ULIB_C_OBJECTS)
 kernel: $(S_OBJECTS) $(C_OBJECTS) initproc
 	@echo
 	@echo $(HUX_MSG) "Linking kernel image..."
-	$(LD) $(LD_FLAGS) -T scripts/kernel.ld -lgcc -o $(TARGET_BIN) -Wl,--oformat,elf32-i386 \
-		$(S_OBJECTS) $(C_OBJECTS) -Wl,-b,binary,$(INIT_BINARY)
+	$(LD) $(LD_FLAGS) -T scripts/kernel.ld -lgcc -o $(TARGET_BIN) \
+		-Wl,--oformat,elf32-i386 $(S_OBJECTS) $(C_OBJECTS)        \
+		-Wl,-b,binary,$(INIT_BINARY)
 	$(OBJCOPY) --only-keep-debug $(TARGET_BIN) $(TARGET_SYM)
 	$(OBJCOPY) --strip-debug $(TARGET_BIN)
 
@@ -123,7 +126,7 @@ kernel: $(S_OBJECTS) $(C_OBJECTS) initproc
 filesys:
 	@echo
 	@echo $(HUX_MSG) "Making the file system image..."
-	python3 scripts/mkfs.py $(FILESYS_IMG) $(USER_BINARYS)
+	python3 scripts/mkfs.py $(FILESYS_IMG) $(USER_LINKEDS)
 
 
 #
@@ -131,12 +134,12 @@ filesys:
 #
 .PHONY: verify
 verify:
-	@if grub-file --is-x86-multiboot $(TARGET_BIN); then	\
-		echo; 												\
-		echo $(HUX_MSG) "VERIFY MULTIBOOT: Confirmed ✓"; 	\
-	else													\
-		echo; 												\
-		echo $(HUX_MSG) "VERIFY MULTIBOOT: FAILED ✗";		\
+	@if grub-file --is-x86-multiboot $(TARGET_BIN); then \
+		echo;                                            \
+		echo $(HUX_MSG) "VERIFY MULTIBOOT: Confirmed ✓"; \
+	else                                                 \
+		echo;                                            \
+		echo $(HUX_MSG) "VERIFY MULTIBOOT: FAILED ✗";    \
 	fi
 
 
@@ -183,5 +186,6 @@ clean:
 	@echo
 	@echo $(HUX_MSG) "Cleaning the build..."
 	rm -f $(S_OBJECTS) $(C_OBJECTS) $(ULIB_S_OBJECTS) $(ULIB_C_OBJECTS) \
-		$(INIT_OBJECT) $(INIT_LINKED) $(INIT_BINARY) $(USER_BINARYS) 	\
-		$(TARGET_BIN) $(TARGET_ISO) $(TARGET_SYM) $(FILESYS_IMG)
+		$(INIT_OBJECT) $(INIT_LINKED) $(INIT_BINARY)                    \
+		$(USER_OBJECTS) $(USER_LINKEDS) $(FILESYS_IMG)                  \
+		$(TARGET_BIN) $(TARGET_ISO) $(TARGET_SYM) 

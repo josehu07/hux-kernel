@@ -48,6 +48,8 @@ extern int32_t remove(char *path);
 extern int32_t read(int32_t fd, char *dst, uint32_t len);
 extern int32_t write(int32_t fd, char *src, uint32_t len);
 extern int32_t chdir(char *path);
+extern int32_t getcwd(char *buf, uint32_t limit);
+extern int32_t exec(char *path, char **argv);
 
 
 #endif

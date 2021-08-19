@@ -13,6 +13,7 @@
 #include "block.h"
 #include "file.h"
 #include "sysfile.h"
+#include "exec.h"
 
 #include "../common/debug.h"
 #include "../common/string.h"
@@ -166,6 +167,41 @@ _dir_empty(mem_inode_t *dir_inode)
     }
 
     return true;
+}
+
+/**
+ * Get filename for child inode of INUMBER.
+ * Must be called with lock on DIR_INODE held.
+ */
+static size_t
+_dir_filename(mem_inode_t *dir_inode, uint32_t inumber,
+              char *buf, size_t limit)
+{
+    dentry_t dentry;
+    for (size_t offset = 2 * sizeof(dentry_t);      /** Skip '.' and '..' */
+         offset < dir_inode->d_inode.size;
+         offset += sizeof(dentry_t)) {
+        if (inode_read(dir_inode, (char *) &dentry, offset,
+                       sizeof(dentry_t)) != sizeof(dentry_t)) {
+            warn("dir_filename: failed to read at offset %u", offset);
+            return limit;
+        }
+        if (dentry.valid == 0)
+            continue;
+
+        if (dentry.inumber == inumber) {
+            size_t len = limit - 1;
+            if (len < strlen(dentry.filename))
+                return limit;
+            else if (len > strlen(dentry.filename))
+                len = strlen(dentry.filename);
+            strncpy(buf, dentry.filename, len);
+            return len;
+        }
+    }
+
+    warn("dir_filename: child inumber %u not found", inumber);
+    return limit;
 }
 
 
@@ -545,6 +581,86 @@ filesys_chdir(char *path)
     proc->cwd = inode;
 
     return true;
+}
+
+/** Get an absolute string path of current working directory. */
+static size_t
+_recurse_abs_path(mem_inode_t *inode, char *buf, size_t limit)
+{
+    if (inode->inumber == ROOT_INUMBER) {
+        buf[0] = '/';
+        return 1;
+    }
+
+    inode_lock(inode);
+
+    /** Check the parent directory. */
+    mem_inode_t *parent_inode = _dir_find(inode, "..", NULL);
+    if (parent_inode == NULL) {
+        warn("abs_path: failed to get parent inode of %u", inode->inumber);
+        inode_unlock(inode);
+        return limit;
+    }
+
+    inode_unlock(inode);
+
+    /** If parent is root, stop recursion.. */
+    if (parent_inode->inumber == ROOT_INUMBER) {
+        buf[0] = '/';
+
+        inode_lock(parent_inode);
+        size_t written = _dir_filename(parent_inode, inode->inumber,
+                                       &buf[1], limit - 1);
+        inode_unlock(parent_inode);
+        inode_put(parent_inode);
+
+        return 1 + written;
+    }
+
+    size_t curr = _recurse_abs_path(parent_inode, buf, limit);
+    if (curr >= limit - 1)
+        return limit;
+
+    inode_lock(parent_inode);
+    size_t written = _dir_filename(parent_inode, inode->inumber,
+                                   &buf[curr], limit - curr);
+    inode_unlock(parent_inode);
+    inode_put(parent_inode);
+
+    return curr + written;
+}
+
+bool
+filesys_getcwd(char *buf, size_t limit)
+{
+    mem_inode_t *inode = running_proc()->cwd;
+    inode_ref(inode);
+
+    size_t written = _recurse_abs_path(inode, buf, limit);
+    if (written >= limit)
+        return false;
+    else
+        buf[limit - 1] = '\0';
+
+    inode_put(inode);
+    return true;
+}
+
+
+/** Wrapper over `exec_program()`. */
+bool
+filesys_exec(char *path, char **argv)
+{
+    mem_inode_t *inode = _path_lookup(path);
+    if (inode == NULL) {
+        warn("exec: failed to lookup path '%s'", path);
+        return false;
+    }
+
+    char *filename = &path[strlen(path) - 1];
+    while (*filename != '/' && filename != path)
+        filename--;
+    return exec_program(inode, filename, argv);
 }
 
 

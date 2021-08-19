@@ -44,7 +44,9 @@ static syscall_t syscall_handlers[] = {
     [SYSCALL_REMOVE]    syscall_remove,
     [SYSCALL_READ]      syscall_read,
     [SYSCALL_WRITE]     syscall_write,
-    [SYSCALL_CHDIR]     syscall_chdir
+    [SYSCALL_CHDIR]     syscall_chdir,
+    [SYSCALL_GETCWD]    syscall_getcwd,
+    [SYSCALL_EXEC]      syscall_exec
 };
 
 #define NUM_SYSCALLS ((int32_t) (sizeof(syscall_handlers) / sizeof(syscall_t)))
@@ -76,6 +78,77 @@ syscall(interrupt_state_t *state)
 }
 
 
+/** Helpers for getting something from user memory address. */
+bool
+sysarg_addr_int(uint32_t addr, int32_t *ret)
+{
+    process_t *proc = running_proc();
+
+    if (addr < proc->stack_low || addr + 4 > USER_MAX) {
+        warn("sysarg_addr_int: invalid arg addr %p for %s", addr, proc->name);
+        return false;
+    }
+
+    *ret = *((int32_t *) addr);
+    return true;
+}
+
+bool
+sysarg_addr_uint(uint32_t addr, uint32_t *ret)
+{
+    process_t *proc = running_proc();
+
+    if (addr < proc->stack_low || addr + 4 > USER_MAX) {
+        warn("sysarg_addr_uint: invalid arg addr %p for %s", addr, proc->name);
+        return false;
+    }
+
+    *ret = *((uint32_t *) addr);
+    return true;
+}
+
+bool
+sysarg_addr_mem(uint32_t addr, char **mem, size_t len)
+{
+    process_t *proc = running_proc();
+
+    if (addr >= USER_MAX || addr + len > USER_MAX || addr < USER_BASE
+        || (addr >= proc->heap_high && addr < proc->stack_low)
+        || (addr + len > proc->heap_high && addr + len <= proc->stack_low)
+        || (addr < proc->heap_high && addr + len > proc->heap_high)) {
+        warn("sysarg_addr_mem: invalid mem %p w/ len %d for %s",
+             addr, len, proc->name);
+        return false;
+    }
+
+    *mem = (char *) addr;
+    return true;
+}
+
+int32_t
+sysarg_addr_str(uint32_t addr, char **str)
+{
+    process_t *proc = running_proc();
+
+    if (addr >= USER_MAX || addr < USER_BASE
+        || (addr >= proc->heap_high && addr < proc->stack_low)) {
+        warn("sysarg_get_str: invalid str %p for %s",
+             addr, proc->name);
+        return -1;
+    }
+
+    char *bound = addr < proc->heap_high ? (char *) proc->heap_high
+                                         : (char *) USER_MAX;
+    for (char *c = (char *) addr; c < bound; ++c) {
+        if (*c == '\0') {
+            *str = (char *) addr;
+            return c - (char *) addr;
+        }
+    }
+    return -1;
+}
+
+
 /**
  * Get syscall arguments on the user stack.
  *   - state->esp is the current user ESP;
@@ -93,15 +166,7 @@ sysarg_get_int(int8_t n, int32_t *ret)
 {
     process_t *proc = running_proc();
     uint32_t addr = (proc->trap_state->esp) + 4 + (4 * n);
-
-    /** If not in valid user stack region. */
-    if (addr < proc->stack_low || addr + 4 > USER_MAX) {
-        warn("sysarg_get_int: invalid arg addr %p for %s", addr, proc->name);
-        return false;
-    }
-
-    *ret = *((int32_t *) addr);
-    return true;
+    return sysarg_addr_int(addr, ret);
 }
 
 /** Same but for uint32_t. */
@@ -110,15 +175,7 @@ sysarg_get_uint(int8_t n, uint32_t *ret)
 {
     process_t *proc = running_proc();
     uint32_t addr = (proc->trap_state->esp) + 4 + (4 * n);
-
-    /** If not in valid user stack region. */
-    if (addr < proc->stack_low || addr + 4 > USER_MAX) {
-        warn("sysarg_get_uint: invalid arg addr %p for %s", addr, proc->name);
-        return false;
-    }
-
-    *ret = *((uint32_t *) addr);
-    return true;
+    return sysarg_addr_uint(addr, ret);
 }
 
 /**
@@ -129,25 +186,12 @@ sysarg_get_uint(int8_t n, uint32_t *ret)
 bool
 sysarg_get_mem(int8_t n, char **mem, size_t len)
 {
-    process_t *proc = running_proc();
     uint32_t ptr;
-
     if (!sysarg_get_int(n, (int32_t *) &ptr)) {
         warn("sysarg_get_mem: inner sysarg_get_int failed");
         return false;
     }
-
-    if (ptr >= USER_MAX || ptr + len > USER_MAX || ptr < USER_BASE
-        || (ptr >= proc->heap_high && ptr < proc->stack_low)
-        || (ptr + len > proc->heap_high && ptr + len <= proc->stack_low)
-        || (ptr < proc->heap_high && ptr + len > proc->heap_high)) {
-        warn("sysarg_get_mem: invalid mem %p w/ len %d for %s",
-             ptr, len, proc->name);
-        return false;
-    }
-
-    *mem = (char *) ptr;
-    return true;
+    return sysarg_addr_mem(ptr, mem, len);
 }
 
 /**
@@ -159,28 +203,10 @@ sysarg_get_mem(int8_t n, char **mem, size_t len)
 int32_t
 sysarg_get_str(int8_t n, char **str)
 {
-    process_t *proc = running_proc();
     uint32_t ptr;
-
     if (!sysarg_get_int(n, (int32_t *) &ptr)) {
         warn("sysarg_get_str: inner sysarg_get_int failed");
         return -1;
     }
-
-    if (ptr >= USER_MAX || ptr < USER_BASE
-        || (ptr >= proc->heap_high && ptr < proc->stack_low)) {
-        warn("sysarg_get_str: invalid str %p for %s",
-             ptr, proc->name);
-        return -1;
-    }
-
-    char *bound = ptr < proc->heap_high ? (char *) proc->heap_high
-                                        : (char *) USER_MAX;
-    for (char *c = (char *) ptr; c < bound; ++c) {
-        if (*c == '\0') {
-            *str = (char *) ptr;
-            return c - (char *) ptr;
-        }
-    }
-    return -1;
+    return sysarg_addr_str(ptr, str);
 }

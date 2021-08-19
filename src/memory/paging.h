@@ -77,7 +77,7 @@ struct page_directory_entry {
 typedef struct page_directory_entry pde_t;
 
 /** Helper macro on getting the pointed-to address stored in an entry. */
-#define ENTRY_FRAME_ADDR(entry) ((entry).frame << 12)
+#define ENTRY_FRAME_ADDR(entry) ((uint32_t) (entry).frame << 12)
 
 
 /** Extern resulted `kheap_curr` for heap allocator initialization. */

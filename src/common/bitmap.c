@@ -35,6 +35,8 @@ inline void
 bitmap_clear(bitmap_t *bitmap, uint32_t slot_no)
 {
     assert(slot_no < bitmap->slots);
+    if (slot_no == 0)
+        info("clearing 0");
 
     spinlock_acquire(&(bitmap->lock));
 

@@ -35,6 +35,8 @@
 #define SYSCALL_READ    15
 #define SYSCALL_WRITE   16
 #define SYSCALL_CHDIR   17
+#define SYSCALL_GETCWD  18
+#define SYSCALL_EXEC    19
 
 
 /**
@@ -91,6 +93,11 @@ typedef int32_t (*syscall_t)(void);
 
 void syscall(interrupt_state_t *state);
 
+
+bool sysarg_addr_int(uint32_t addr, int32_t *ret);
+bool sysarg_addr_uint(uint32_t addr, uint32_t *ret);
+bool sysarg_addr_mem(uint32_t addr, char **mem, size_t len);
+int32_t sysarg_addr_str(uint32_t addr, char **str);
 
 bool sysarg_get_int(int8_t n, int32_t *ret);
 bool sysarg_get_uint(int8_t n, uint32_t *ret);

@@ -269,7 +269,7 @@ process_fork(uint8_t timeslice)
     child->pgdir = (pde_t *) salloc_page();
     if (child->pgdir == NULL) {
         warn("fork: cannot allocate level-1 directory, out of kheap memory?");
-        sfree_page((char *) child->kstack);     // Maybe use goto.
+        sfree_page((char *) child->kstack);         // Maybe use goto.
         child->kstack = 0;
         child->pid = 0;
         child->state = UNUSED;
@@ -282,8 +282,7 @@ process_fork(uint8_t timeslice)
         pte_t *pte = paging_walk_pgdir(child->pgdir, vaddr_btm, true);
         if (pte == NULL) {
             warn("fork: cannot allocate level-2 table, out of kheap memory?");
-            paging_unmap_range(child->pgdir, 0, vaddr_btm); // Maybe use goto.
-            paging_destroy_pgdir(child->pgdir);
+            paging_destroy_pgdir(child->pgdir);     // Maybe use goto.
             child->pgdir = NULL;
             sfree_page((char *) child->kstack);
             child->kstack = 0;
@@ -301,8 +300,9 @@ process_fork(uint8_t timeslice)
         || !paging_copy_range(child->pgdir, parent->pgdir,
                               parent->stack_low, USER_MAX)) {
         warn("fork: failed to copy parent memory state over to child");
-        paging_unmap_range(child->pgdir, 0, vaddr_btm);     // Maybe use goto.
-        paging_destroy_pgdir(child->pgdir);
+        paging_unmap_range(child->pgdir, USER_BASE, parent->heap_high);
+        paging_unmap_range(child->pgdir, parent->stack_low, USER_MAX);
+        paging_destroy_pgdir(child->pgdir);         // Maybe use goto.
         child->pgdir = NULL;
         sfree_page((char *) child->kstack);
         child->kstack = 0;

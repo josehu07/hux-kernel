@@ -179,7 +179,7 @@ paging_map_upage(pte_t *pte, bool writable)
     pte->user = 1;
     pte->frame = frame_num;
 
-    return ENTRY_FRAME_ADDR((*pte));
+    return ENTRY_FRAME_ADDR(*pte);
 }
 
 /** Map a lower-half kernel page to the user PTE. */

@@ -1,7 +1,7 @@
 /**
  * Multiboot1 related structures.
- * See https://www.gnu.org/software/grub/manual/multiboot/multiboot.html.
- * See https://www.gnu.org/software/grub/manual/multiboot/html_node/Example-OS-code.html.
+ * See https://www.gnu.org/software/grub/manual/multiboot/multiboot.html
+ * See https://www.gnu.org/software/grub/manual/multiboot/html_node/Example-OS-code.html
  */
 
 
@@ -18,7 +18,7 @@
 
 /**
  * Multiboot1 header.
- * See https://www.gnu.org/software/grub/manual/multiboot/multiboot.html#Header-layout.
+ * See https://www.gnu.org/software/grub/manual/multiboot/multiboot.html#Header-layout
  */
 struct multiboot_header {
     uint32_t magic;     /* Must be header magic 0x1BADB002. */
@@ -38,7 +38,7 @@ typedef struct multiboot_header multiboot_header_t;
  * header table from an ELF kernel is, the size of each entry, number of
  * entries, and the string table used as the index of names", stated on GRUB
  * multiboot1 specification.
- * See https://www.gnu.org/software/grub/manual/multiboot/multiboot.html#Boot-information-format.
+ * See https://www.gnu.org/software/grub/manual/multiboot/multiboot.html#Boot-information-format
  */
 struct multiboot_elf_section_header_table {
     uint32_t num;
@@ -51,7 +51,7 @@ typedef struct multiboot_elf_section_header_table multiboot_elf_section_header_t
 
 /**
  * Multiboot1 information.
- * See https://www.gnu.org/software/grub/manual/multiboot/multiboot.html#Boot-information-format.
+ * See https://www.gnu.org/software/grub/manual/multiboot/multiboot.html#Boot-information-format
  */
 struct multiboot_info {
     uint32_t flags;         /* Multiboot info version number. */
