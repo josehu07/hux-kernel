@@ -24,6 +24,29 @@
 #define CREATE_FILE 0x1
 #define CREATE_DIR  0x2
 
+/** Struct & type code for `fstat()`. */
+#define INODE_TYPE_EMPTY 0
+#define INODE_TYPE_FILE  1
+#define INODE_TYPE_DIR   2
+
+struct file_stat {
+    uint32_t inumber;
+    uint32_t type;
+    uint32_t size;
+};
+typedef struct file_stat file_stat_t;
+
+/** Struct of a directory entry, see `vsfs.h`. */
+#define DENTRY_SIZE 128
+#define MAX_FILENAME 100
+
+struct dentry {
+    uint32_t valid;
+    uint32_t inumber;
+    char filename[DENTRY_SIZE - 8];
+} __attribute__((packed));
+typedef struct dentry dentry_t;
+
 
 /**
  * Externed from ASM `syscall.s`.
@@ -50,6 +73,7 @@ extern int32_t write(int32_t fd, char *src, uint32_t len);
 extern int32_t chdir(char *path);
 extern int32_t getcwd(char *buf, uint32_t limit);
 extern int32_t exec(char *path, char **argv);
+extern int32_t fstat(int32_t fd, file_stat_t *stat);
 
 
 #endif

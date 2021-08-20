@@ -896,6 +896,8 @@ _vsnprintf(char *buf, size_t count, const char *fmt, va_list va)
         seg_end++;
         fmt++;
     }
+
+    *buf = '\0';
 }
 
 

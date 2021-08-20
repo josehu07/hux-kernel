@@ -12,6 +12,7 @@
 #include <stddef.h>
 
 #include "vsfs.h"
+#include "sysfile.h"
 
 #include "../common/spinlock.h"
 #include "../common/parklock.h"
@@ -72,6 +73,8 @@ size_t inode_write(mem_inode_t *m_inode, char *src, uint32_t offset, size_t len)
 file_t *file_get();
 void file_ref(file_t *file);
 void file_put(file_t *file);
+
+void file_stat(file_t *file, file_stat_t *stat);
 
 
 #endif

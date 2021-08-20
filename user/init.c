@@ -4,6 +4,7 @@
 
 
 #include <stdint.h>
+#include <stddef.h>
 
 #include "lib/syscall.h"
 #include "lib/debug.h"
@@ -22,8 +23,9 @@ main(void)
 
     if (shell_pid == 0) {
         /** Child: exec the command line shell. */
-        char *argv[1];
-        argv[0] = 0;
+        char *argv[2];
+        argv[0] = "shell";
+        argv[1] = NULL;
         exec("shell", argv);
         error("init: failed to exec the shell program");
 

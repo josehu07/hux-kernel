@@ -664,6 +664,21 @@ filesys_exec(char *path, char **argv)
 }
 
 
+/** Get metadata information about an open file. */
+bool
+filesys_fstat(int8_t fd, file_stat_t *stat)
+{
+    file_t *file = _find_process_file(fd);
+    if (file == NULL) {
+        warn("fstat: cannot find file for fd %d", fd);
+        return false;
+    }
+
+    file_stat(file, stat);
+    return true;
+}
+
+
 /** Flush the in-memory modified bitmap block to disk. */
 bool
 inode_bitmap_update(uint32_t slot_no)

@@ -46,7 +46,8 @@ static syscall_t syscall_handlers[] = {
     [SYSCALL_WRITE]     syscall_write,
     [SYSCALL_CHDIR]     syscall_chdir,
     [SYSCALL_GETCWD]    syscall_getcwd,
-    [SYSCALL_EXEC]      syscall_exec
+    [SYSCALL_EXEC]      syscall_exec,
+    [SYSCALL_FSTAT]     syscall_fstat
 };
 
 #define NUM_SYSCALLS ((int32_t) (sizeof(syscall_handlers) / sizeof(syscall_t)))

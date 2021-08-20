@@ -10,6 +10,7 @@
 #include "file.h"
 #include "block.h"
 #include "vsfs.h"
+#include "sysfile.h"
 
 #include "../common/debug.h"
 #include "../common/string.h"
@@ -520,4 +521,18 @@ file_put(file_t *file)
 
     /** Actually closing, put inode. */
     inode_put(inode);
+}
+
+
+/** Get metadata information of a file. */
+void
+file_stat(file_t *file, file_stat_t *stat)
+{
+    inode_lock(file->inode);
+
+    stat->inumber = file->inode->inumber;
+    stat->type = file->inode->d_inode.type;
+    stat->size = file->inode->d_inode.size;
+
+    inode_unlock(file->inode);
 }

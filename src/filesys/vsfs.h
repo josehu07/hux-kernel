@@ -13,6 +13,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include "sysfile.h"
+
 #include "../common/bitmap.h"
 
 
@@ -125,6 +127,8 @@ bool filesys_chdir(char *path);
 bool filesys_getcwd(char *buf, size_t limit);
 
 bool filesys_exec(char *path, char **argv);
+
+bool filesys_fstat(int8_t fd, file_stat_t *stat);
 
 bool inode_bitmap_update(uint32_t slot_no);
 bool data_bitmap_update(uint32_t slot_no);

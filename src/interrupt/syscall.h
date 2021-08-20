@@ -37,6 +37,7 @@
 #define SYSCALL_CHDIR   17
 #define SYSCALL_GETCWD  18
 #define SYSCALL_EXEC    19
+#define SYSCALL_FSTAT   20
 
 
 /**

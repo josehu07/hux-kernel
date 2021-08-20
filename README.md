@@ -15,10 +15,7 @@ Hux - An x86 32-bit single-CPU toy operating system kernel built from scratch, f
 
 ## Tutorial / Development Doc
 
-I document the whole development process of Hux - its skeleton, related theories, practice pitfalls, plus everything I reckon important as a complete set of tutorials. They can be found at:
-
-- The [**WIKI pages 📝**](https://github.com/josehu07/hux-kernel/wiki) of this repo ✭
-- The Hux kernel dev doc PDF (identical, WIP)
+I document the whole development process of Hux as a complete set of tutorials. They can be found at the [**WIKI pages 📝**](https://github.com/josehu07/hux-kernel/wiki) of this GitHub repository ✭.
 
 If there are any typos / mistakes / errors, please raise an issue!
 
@@ -30,22 +27,19 @@ Requires a Linux host development environment. Tested on Ubuntu Xenial, Bionic, 
 Clone the repo, set up a development cross-compilation toolchain following [this wiki page](https://github.com/josehu07/hux-kernel/wiki/02.-The-Very-First-Skeleton), then build Hux by:
 
 ```bash
+$ make clean
 $ make
 ```
 
-Or, if you just want to try out Hux without a development toolchain, download both the released kernel image `hux.iso` and the initial file system image `vsfs.img` to the folder.
+Or, if you just want to try out Hux without a development toolchain, download both the released kernel image `hux.iso` and the initial file system image `vsfs.img` to the folder. (The images have bot been uploaded yet. The first release of Hux is coming soon.)
 
-(The images have bot been uploaded yet. The first release of Hux is coming soon.)
-
-To run Hux in QEMU, do:
+To run Hux in QEMU (currently only supports GUI VGA mode, "nographics" mode is coming soon), do:
 
 ```bash
 $ make qemu
 ```
 
 You will see the QEMU GUI popping up with GRUB loaded. Choose the "`Hux`" option with <kbd>Enter</kbd> to boot into Hux.
-
-A random screenshot of the system at current progress:
 
 <p align=center> <img src="README-demo.gif" width=720px align=center /> </p>
 
@@ -99,11 +93,12 @@ Check the "References" section [here](https://github.com/josehu07/hux-kernel/wik
 - [x] Essential system calls
 - [x] Time-sharing scheduler
 - [x] Basic IDE disk driver
-- [ ] Very simple file system
+- [x] Very simple file system
+- [ ] More user-level utilities
+- [ ] Thorough user-level tests
 - [ ] Caching, swapping, & logging
-- [ ] Multi-threading concurrency
 - [x] Synchronization primitives
+- [ ] Multi-threading concurrency
 - [ ] Move to APIC & IOAPIC
 - [ ] Direct memory access
-- [ ] Summary of current flaws
 - [ ] Extend Hux to Rux with Rust

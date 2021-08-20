@@ -11,7 +11,14 @@
 #include "lib/printf.h"
 #include "lib/debug.h"
 #include "lib/string.h"
-#include "lib/malloc.h"
+#include "lib/types.h"
+
+
+#define CWD_BUF_SIZE  256
+#define LINE_BUF_SIZE 256
+#define MAX_EXEC_ARGS 32
+
+#define ENV_PATH "/"
 
 
 /** A fancy welcome logo in ASCII. */
@@ -29,172 +36,149 @@ _shell_welcome_logo(void)
             "\n");
 }
 
-
-__attribute__((unused))
+/** Compose & print the prompt. */
 static void
-_test_child_workload(void)
+_print_prompt(void)
 {
-    int32_t res = 0;
-    for (int32_t i = 12345; i < 57896; ++i)
-        for (int32_t j = i; j > 12345; --j)
-            res += (i * j) % 567;
-    printf("res %d: %d\n", getpid(), res);
+    char username[5] = "hush";
+    cprintf(VGA_COLOR_GREEN, "%s", username);
+
+    cprintf(VGA_COLOR_DARK_GREY, ":");
+
+    char cwd[CWD_BUF_SIZE];
+    memset(cwd, 0, CWD_BUF_SIZE);
+    if (getcwd(cwd, CWD_BUF_SIZE - MAX_FILENAME - 1) != 0)
+        error("shell: failed to get cwd");
+    size_t ret_len = strlen(cwd);
+    if (cwd[ret_len - 1] != '/') {
+        cwd[ret_len] = '/';
+        cwd[ret_len + 1] = '\0';
+    }
+    cprintf(VGA_COLOR_CYAN, "%s", cwd);
+
+    cprintf(VGA_COLOR_DARK_GREY, "$ ");
+}
+
+
+/** Built-in cmd `cd`: change directory. */
+static void
+_change_cwd(char *path)
+{
+    if (path == NULL)   /** empty path, go to "/". */
+        path = "/";
+
+    if (chdir(path) != 0)
+        warn("shell: cd to path '%s' failed", path);
+}
+
+/** Fork + exec external command executable. */
+static void
+_fork_exec(char *path, char **argv)
+{
+    int8_t pid = fork(0);
+    if (pid < 0) {
+        warn("shell: failed to fork child process");
+        return;
+    }
+
+    if (pid == 0) {     /** Child. */
+        /**
+         * Try the executable under current working directory if found.
+         * Otherwise, fall through to try the one under ENV_PATH (which
+         * is the root directory "/").
+         */
+        if (open(path, OPEN_RD) < 0) {      /** Not found. */
+            char full[CWD_BUF_SIZE];
+            snprintf(full, CWD_BUF_SIZE, "%s/%s", ENV_PATH, path);
+            exec(full, argv);
+        } else 
+            exec(path, argv);
+
+        warn("shell: failed to exec '%s'", path);
+        exit();
+    
+    } else {            /** Parent shell. */
+        int8_t pid_w = wait();
+        if (pid_w != pid)
+            warn("shell: waited pid %d does not equal %d", pid_w, pid);
+    }
+}
+
+
+/**
+ * Parse a command line. Parse the tokens according to whitespaces,
+ * interpret the first one as the executable filename, and together
+ * with the rest as the argument list.
+ */
+static int
+_parse_tokens(char *line, char **argv)
+{
+    size_t argi;
+    size_t pos = 0;
+
+    for (argi = 0; argi < MAX_EXEC_ARGS - 1; ++argi) {
+        while (isspace(line[pos]))
+            pos++;
+        if (line[pos] == '\0') {
+            argv[argi] = NULL;
+            return argi;
+        }
+
+        argv[argi] = &line[pos];
+
+        while(!isspace(line[pos]))
+            pos++;
+        if (line[pos] != '\0')
+            line[pos++] = '\0';
+    }
+
+    argv[argi] = NULL;
+    return argi;
+}
+
+/**
+ * Handle a command line.
+ *   - If is a built-in command, handle directly;
+ *   - Else, fork a child process to run the command executable.
+ */
+static void
+_handle_cmdline(char *line)
+{
+    char *argv[MAX_EXEC_ARGS];
+    int argc = _parse_tokens(line, argv);
+    if (argc <= 0)
+        return;
+    else if (argc >= MAX_EXEC_ARGS)
+        warn("shell: line exceeds max num of args %d", MAX_EXEC_ARGS);
+
+    if (strncmp(argv[0], "cd", 2) == 0)
+        _change_cwd(argv[1]);   /** Could be NULL. */
+    else
+        _fork_exec(argv[0], argv);
 }
 
 
 void
-main(void)
+main(int argc, char *argv[])
 {
+    (void) argc;    // Unused.
+    (void) argv;
+
     _shell_welcome_logo();
 
-    printf("Hello from the exec'ed shell program!\n");
-
-    char cmd_buf[256];
-    memset(cmd_buf, 0, 256);
+    char cmd_buf[LINE_BUF_SIZE];
+    memset(cmd_buf, 0, LINE_BUF_SIZE);
 
     while (1) {
-        printf("temp shell $ ");
+        _print_prompt();
         
-        if (kbdstr(cmd_buf, 256) < 0)
-            warn("shell: failed to get keyboard string");
+        if (kbdstr(cmd_buf, LINE_BUF_SIZE) < 0)
+            error("shell: failed to get keyboard string");
         else
-            printf("%s", cmd_buf);
+            _handle_cmdline(cmd_buf);
 
-        memset(cmd_buf, 0, 256);
+        memset(cmd_buf, 0, LINE_BUF_SIZE);
     }
-
-    // char dirname[128] = "temp";
-    // char filepath[128] = "temp/test.txt";
-    // char filename[128] = "test.txt";
-
-    // printf("[P] Created dir '%s' -> %d\n", dirname, create(dirname, CREATE_DIR));
-    // printf("[P] Created file '%s' -> %d\n", filepath, create(filepath, CREATE_FILE));
-    // printf("[P] Changed cwd to '%s' -> %d\n", dirname, chdir(dirname));
-
-    // int8_t pid = fork(0);
-    // assert(pid >= 0);
-
-    // if (pid == 0) {
-    //     // Child.
-    //     char cwd[100];
-    //     printf("[C] Called getcwd -> %d\n", getcwd(cwd, 100));
-    //     printf("    cwd: %s\n", cwd);
-    //     int8_t fd = open(filename, OPEN_WR);
-    //     printf("[C] Opened file '%s' -> %d\n", filename, fd);
-    //     printf("[C] Written to fd %d -> %d\n", fd, write(fd, "AAAAA", 5));
-    //     printf("    src: %s\n", "AAAAA");
-    //     exit();
-
-    // } else {
-    //     // Parent.
-    //     assert(wait() == pid);
-    //     printf("[P] Changed cwd to '%s' -> %d\n", "./..", chdir("./.."));
-    //     int8_t fd = open(filepath, OPEN_RD);
-    //     printf("[P] Opened file '%s' -> %d\n", filepath, fd);
-    //     char buf[6] = {0};
-    //     printf("[P] Read from fd %d -> %d\n", fd, read(fd, buf, 5));
-    //     printf("    dst: %s\n", buf);
-    //     printf("[P] Closing fd %d -> %d\n", fd, close(fd));
-    //     printf("[P] Removing file '%s' -> %d\n", filepath, remove(filepath));
-    //     printf("[P] Removing dir '%s' -> %d\n", dirname, remove(dirname));
-    // }
-
-    // printf("Files done!\n");
-
-    // int8_t i;
-
-    // printf("parent: forking...\n");
-    // for (i = 1; i <= 3; ++i) {
-    //     int8_t pid = fork(i*4);
-    //     if (pid < 0)
-    //         error("parent: forking child i=%d failed", i);
-    //     if (pid == 0) {
-    //         // Child.
-    //         _test_child_workload();
-    //         exit();
-    //     } else
-    //         printf("parent: forked child pid=%d, timeslice=%d\n", pid, i*4);
-    // }
-
-    // printf("parent: waiting...\n");
-    // for (i = 1; i <= 3; ++i) {
-    //     int8_t pid = wait();
-    //     printf("parent: waited child pid=%d\n", pid);
-    // }
-
-    // printf("On-stack buffer of size 8200...\n");
-    // char buf[8200];
-    // buf[0] = 'A';
-    // buf[1] = '\0';
-    // printf("Variable buf @ %p: %s\n", buf, buf);
-
-    // printf("\nOn-heap allocations & frees...\n");
-    // char *buf1 = (char *) malloc(200);
-    // printf("Buf1: %p\n", buf1);
-    // char *buf2 = (char *) malloc(4777);
-    // printf("Buf2: %p\n", buf2);
-    // mfree(buf1);
-    // char *buf3 = (char *) malloc(8);
-    // printf("Buf3: %p\n", buf3);
-    // mfree(buf3);
-    // mfree(buf2);
-
-    // char kbd_buf[100];
-    // printf("Please enter an input str: ");
-    // kbdstr(kbd_buf, 100);
-    // printf("Fetched str from keyboard: %s\n", kbd_buf);
-
-    // int32_t mypid = getpid();
-    // printf(" Parent: parent gets pid - %d\n", mypid);
-    // sleep(2000);
-
-    // cprintf(VGA_COLOR_LIGHT_GREEN, "\n Round 1 --\n");
-    // printf("  Parent: forking child 1\n");
-    // int32_t pid1 = fork(0);
-    // if (pid1 < 0) {
-    //     cprintf(VGA_COLOR_RED, "  Parent: fork failed\n");
-    //     _fake_halt();
-    // }
-    // if (pid1 == 0) {
-    //     // Child.
-    //     printf("  Child1: entering an infinite loop\n");
-    //     _fake_halt();
-    // } else {
-    //     // Parent.
-    //     printf("  Parent: child 1 has pid - %d\n", pid1);
-    //     sleep(1500);
-    //     printf("  Parent: slept 1.5 secs, going to kill child 1\n");
-    //     kill(pid1);
-    //     wait();
-    //     printf("  Parent: killed child 1\n");
-    // }
-
-    // cprintf(VGA_COLOR_LIGHT_GREEN, "\n Round 2 --\n");
-    // printf("  Current uptime: %d ms\n", uptime());
-    // printf("  Going to sleep for 2000 ms...\n");
-    // sleep(2000);
-    // printf("  Current uptime: %d ms\n", uptime());
-
-    // cprintf(VGA_COLOR_LIGHT_GREEN, "\n Round 3 --\n");
-    // printf("  Parent: forking child 2\n");
-    // int32_t pid2 = fork(0);
-    // if (pid2 < 0) {
-    //     cprintf(VGA_COLOR_RED, "  Parent: fork failed\n");
-    //     _fake_halt();
-    // }
-    // if (pid2 == 0) {
-    //     // Child.
-    //     printf("  Child2: going to sleep 2 secs\n");
-    //     sleep(2000);
-    //     exit();
-    // } else {
-    //     // Parent.
-    //     printf("  Parent: child 2 has pid - %d\n", pid2);
-    //     wait();
-    //     printf("  Parent: waited child 2\n");
-    // }
-
-    // cprintf(VGA_COLOR_GREEN, "\n Cases done!\n");
 
     exit();
 }

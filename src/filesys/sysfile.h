@@ -19,6 +19,15 @@
 #define CREATE_DIR  0x2
 
 
+/** For the `fstat()` syscall. */
+struct file_stat {
+    uint32_t inumber;
+    uint32_t type;
+    uint32_t size;
+};
+typedef struct file_stat file_stat_t;
+
+
 int32_t syscall_open();
 int32_t syscall_close();
 int32_t syscall_create();
@@ -28,6 +37,7 @@ int32_t syscall_write();
 int32_t syscall_chdir();
 int32_t syscall_getcwd();
 int32_t syscall_exec();
+int32_t syscall_fstat();
 
 
 #endif

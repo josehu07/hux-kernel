@@ -193,3 +193,20 @@ syscall_exec(void)
     }
     return SYS_FAIL_RC;
 }
+
+/** int32_t fstat(int32_t fd, file_stat_t *stat); */
+int32_t
+syscall_fstat(void)
+{
+    int32_t fd;
+    file_stat_t *stat;
+
+    if (!sysarg_get_int(0, &fd))
+        return SYS_FAIL_RC;
+    if (!sysarg_get_mem(1, (char **) &stat, sizeof(file_stat_t)))
+        return SYS_FAIL_RC;
+
+    if (!filesys_fstat(fd, stat))
+        return SYS_FAIL_RC;
+    return 0;
+}

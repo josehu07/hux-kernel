@@ -175,18 +175,19 @@ exec_program(mem_inode_t *inode, char *filename, char **argv)
             goto fail;
         sp = sp - (strlen(argv[argc]) + 1);
         sp &= 0xFFFFFFFC;   /** Align to 32-bit words. */
-        memcpy((char *) (paddr_top - (USER_MAX - sp)), argv[argc],
+        memcpy((char *) (paddr_top + PAGE_SIZE - (USER_MAX - sp)), argv[argc],
                strlen(argv[argc]) + 1);
         ustack[3 + argc] = sp;
     }
     ustack[3 + argc] = 0;       /** End of argv list. */
 
     ustack[2] = sp - (argc + 1) * 4;       /** `argv` */
-    ustack[1] = argc;                      /** `argv` */
+    ustack[1] = argc;                      /** `argc` */
     ustack[0] = 0x0000DEAD;  /** Fake return address. */
 
     sp -= (3 + argc + 1) * 4;
-    memcpy((char *) (paddr_top - (USER_MAX - sp)), ustack, (3 + argc + 1) * 4);
+    memcpy((char *) (paddr_top + PAGE_SIZE - (USER_MAX - sp)), ustack,
+           (3 + argc + 1) * 4);
 
     /** Change process name. */
     strncpy(proc->name, filename, strlen(filename));
