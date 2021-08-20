@@ -10,7 +10,7 @@ Hux - An x86 32-bit single-CPU toy operating system kernel built from scratch, f
 |   Author    | Kernel Src LoC (temp)  | Tutorial LoC (temp) |
 |   :---:     |         :---:          |       :---:         |
 | Guanzhou Hu |      C + x86 ASM       |      Markdown       |
-|  Aug. 2021  |         5101           |        6706         |
+|  Aug. 2021  |         7850           |        10005        |
 
 
 ## Tutorial / Development Doc
