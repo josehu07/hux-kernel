@@ -31,7 +31,7 @@ $ make clean
 $ make
 ```
 
-Or, if you just want to try out Hux without a development toolchain, download both the released kernel image `hux.iso` and the initial file system image `vsfs.img` (a little bit large) to the folder.
+Or, if you just want to try out Hux without a development toolchain, download both the [released](https://github.com/josehu07/hux-kernel/releases) kernel image `hux.iso` and the initial file system image `vsfs.img` (a little bit large) to the folder.
 
 To run Hux in QEMU (currently only supports GUI VGA mode so requires a desktop host environment, "nographics" mode is coming soon), do:
 
