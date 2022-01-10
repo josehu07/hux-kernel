@@ -88,16 +88,17 @@ Check the "References" section [here](https://github.com/josehu07/hux-kernel/wik
 - [x] Keyboard input support
 - [x] Global descriptors table
 - [x] Virtual memory (paging)
-- [x] Heal memory allocators
+- [x] Heap memory allocators
 - [x] Process user mode execution
 - [x] Essential system calls
 - [x] Time-sharing scheduler
 - [x] Basic IDE disk driver
 - [x] Very simple file system
+- [ ] File system page cache
+- [ ] File system crash consistency
 - [ ] Support for nographics mode
 - [ ] More user-level utilities
-- [ ] Thorough user-level tests
-- [ ] Caching, swapping, & logging
+- [x] Adding user-level tests
 - [x] Synchronization primitives
 - [ ] Multi-threading concurrency
 - [ ] Move to APIC & IOAPIC
