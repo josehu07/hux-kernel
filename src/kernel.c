@@ -91,7 +91,7 @@ kernel_main(unsigned long magic, unsigned long addr)
     info("timer frequency is set to %dHz", TIMER_FREQ_HZ);
 
     /** Initialize PS/2 keyboard support. */
-    _init_message("initializing PS/2 keybaord support");
+    _init_message("initializing PS/2 keyboard support");
     keyboard_init();
     _init_message_ok();
 
