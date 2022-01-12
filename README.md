@@ -96,7 +96,7 @@ Check the "References" section [here](https://github.com/josehu07/hux-kernel/wik
 - [x] Very simple file system
 - [ ] File system page cache
 - [ ] File system crash consistency
-- [ ] Support for nographics mode
+- [x] Support for nographics mode
 - [ ] More user-level utilities
 - [x] Adding user-level tests
 - [x] Synchronization primitives
