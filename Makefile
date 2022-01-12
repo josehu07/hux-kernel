@@ -53,7 +53,7 @@ LD_FLAGS=-ffreestanding -O2 -nostdlib
 OBJCOPY=i686-elf-objcopy
 OBJDUMP=i686-elf-objdump
 
-QEMU_OPTS=-cdrom $(TARGET_ISO) -m 128M \
+QEMU_OPTS=-vga std -cdrom $(TARGET_ISO) -m 128M \
 		  -drive if=ide,index=0,media=disk,file=$(FILESYS_IMG),format=raw
 
 
