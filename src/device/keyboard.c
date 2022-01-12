@@ -606,7 +606,7 @@ keyboard_init()
 
     spinlock_init(&keyboard_lock, "keyboard_lock");
 
-    /** Register keybaord interrupt ISR handler. */
+    /** Register keyboard interrupt ISR handler. */
     isr_register(INT_NO_KEYBOARD, &keyboard_interrupt_handler);
 }
 
