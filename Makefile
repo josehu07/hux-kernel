@@ -171,6 +171,13 @@ qemu_curses:
 	@echo $(HUX_MSG) "Launching QEMU (curses display)..."
 	qemu-system-i386 $(QEMU_OPTS) -display curses
 
+.PHONY: qemu_vnc
+qemu_vnc:
+	@echo
+	@echo $(HUX_MSG) "Launching QEMU (vnc display)..."
+	@echo $(HUX_MSG) "Please connect to 'localhost:5901' in VNC viewer client"
+	qemu-system-i386 $(QEMU_OPTS) -display vnc=localhost:1
+
 .PHONY: qemu_debug
 qemu_debug:
 	@echo

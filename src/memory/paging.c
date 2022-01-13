@@ -23,7 +23,7 @@
 #include "../process/layout.h"
 
 
-/** Kernel heap bottom address - should be above `elf_shstrtab_end`. */
+/** Kernel heap bottom address - should be above `elf_sections_end`. */
 uint32_t kheap_curr;
 
 /** kernel's identity-mapping page directory. */
@@ -387,7 +387,7 @@ void
 paging_init(void)
 {
     /** Kernel heap starts above all ELF sections. */
-    kheap_curr = ADDR_PAGE_ROUND_UP((uint32_t) elf_shstrtab_end);
+    kheap_curr = ADDR_PAGE_ROUND_UP((uint32_t) elf_sections_end);
 
     /**
      * The frame bitmap also needs space, so allocate space for it in

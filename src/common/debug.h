@@ -18,7 +18,7 @@
 
 
 /** For marking the begin of kernel heap. */
-extern uint32_t elf_shstrtab_end;
+extern uint32_t elf_sections_end;
 
 
 void debug_init(multiboot_info_t *mbi);
