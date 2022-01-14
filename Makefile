@@ -165,12 +165,6 @@ qemu:
 	@echo $(HUX_MSG) "Launching QEMU..."
 	qemu-system-i386 $(QEMU_OPTS)
 
-.PHONY: qemu_curses
-qemu_curses:
-	@echo
-	@echo $(HUX_MSG) "Launching QEMU (curses display)..."
-	qemu-system-i386 $(QEMU_OPTS) -display curses
-
 .PHONY: qemu_vnc
 qemu_vnc:
 	@echo

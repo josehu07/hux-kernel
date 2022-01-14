@@ -33,10 +33,17 @@ $ make
 
 Or, if you just want to try out Hux without a development toolchain, download both the [released](https://github.com/josehu07/hux-kernel/releases) kernel image `hux.iso` and the initial file system image `vsfs.img` (a little bit large) to the folder.
 
-To run Hux in QEMU (currently only supports GUI VGA mode so requires a desktop host environment, "nographics" mode is coming soon), do:
+To run Hux in QEMU **>= v6.2.0**, do:
 
 ```bash
-$ make qemu
+$ make qemu     # opens a VGA GUI window
+```
+
+If you are in a non-GUI environment, it is recommended to redirect VGA output to built-in VNC server, and connect to that server from a VNC client:
+
+```bash
+$ make qemu_vnc     # redirects VGA output to VNC server
+                    # from VNC client, connect to 'hostname:5901'
 ```
 
 You will see the QEMU GUI popping up with GRUB loaded. Choose the "`Hux`" option with <kbd>Enter</kbd> to boot into Hux.
