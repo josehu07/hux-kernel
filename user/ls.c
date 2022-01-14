@@ -13,7 +13,7 @@
 #include "lib/string.h"
 
 
-#define CONCAT_BUT_SIZE 300
+#define CONCAT_BUF_SIZE 300
 
 
 static char *
@@ -64,9 +64,9 @@ _list_directory(char *path)
      * Listing a directory, then read out its content, interpret as an
      * array of directory entries.
      */
-    char concat_buf[CONCAT_BUT_SIZE];
-    strncpy(concat_buf, path, CONCAT_BUT_SIZE - 2);
-    if (CONCAT_BUT_SIZE - 1 - strlen(concat_buf) < MAX_FILENAME) {
+    char concat_buf[CONCAT_BUF_SIZE];
+    strncpy(concat_buf, path, CONCAT_BUF_SIZE - 2);
+    if (CONCAT_BUF_SIZE - 1 - strlen(concat_buf) < MAX_FILENAME) {
         warn("ls: path '%s' too long", path);
         close(fd);
         return;
