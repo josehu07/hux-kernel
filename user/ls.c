@@ -104,6 +104,13 @@ _list_directory(char *path)
 }
 
 
+static void
+_print_help_exit(char *me)
+{
+    printf("Usage: %s [-h] [path [paths]]\n", me);
+    exit();
+}
+
 void
 main(int argc, char *argv[])
 {
@@ -111,6 +118,9 @@ main(int argc, char *argv[])
         _list_directory(".");
         exit();
     }
+
+    if (strncmp(argv[1], "-h", 2) == 0)
+        _print_help_exit(argv[0]);
 
     if (argc == 2) {
         _list_directory(argv[1]);

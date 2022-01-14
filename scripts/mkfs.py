@@ -331,7 +331,7 @@ def solidize_dtree():
             for key, val in elem.items():
                 solidize_elem(val[1], val[0], my_inumber)
         else:
-            print("Error: unrecognized element type {}".format(type(content)))
+            print("Error: unrecognized element type {}".format(type(elem)))
             exit(1)
 
     solidize_elem(dtree, 0, 0)      # "/"s '..' also points to "/"
@@ -345,8 +345,10 @@ def main():
     user_binaries = sys.argv[2:]
 
     if os.path.isfile(output_img):
-        print("WARN: output image file '{}' exists, skipping!".format(output_img))
-        exit(0)
+        ans = input("WARN: image file '{}' exists, overwrite? (y/n) ".format(output_img))
+        if ans != 'y':
+            print(" Skipped!")
+            exit(0)
 
     # Build the initial file system image.
     gen_superblock()
