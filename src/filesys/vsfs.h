@@ -130,6 +130,8 @@ bool filesys_exec(char *path, char **argv);
 
 bool filesys_fstat(int8_t fd, file_stat_t *stat);
 
+bool filesys_seek(int8_t fd, size_t offset);
+
 bool inode_bitmap_update(uint32_t slot_no);
 bool data_bitmap_update(uint32_t slot_no);
 

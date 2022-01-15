@@ -210,3 +210,20 @@ syscall_fstat(void)
         return SYS_FAIL_RC;
     return 0;
 }
+
+/** int32_t seek(int32_t fd, uint32_t offset); */
+int32_t
+syscall_seek(void)
+{
+    int32_t fd;
+    uint32_t offset;
+
+    if (!sysarg_get_int(0, &fd))
+        return SYS_FAIL_RC;
+    if (!sysarg_get_uint(1, &offset))
+        return SYS_FAIL_RC;
+
+    if (!filesys_seek(fd, offset))
+        return SYS_FAIL_RC;
+    return 0;
+}

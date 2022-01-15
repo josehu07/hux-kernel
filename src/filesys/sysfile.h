@@ -38,6 +38,7 @@ int32_t syscall_chdir();
 int32_t syscall_getcwd();
 int32_t syscall_exec();
 int32_t syscall_fstat();
+int32_t syscall_seek();
 
 
 #endif

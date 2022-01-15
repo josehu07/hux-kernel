@@ -679,6 +679,30 @@ filesys_fstat(int8_t fd, file_stat_t *stat)
 }
 
 
+/** Seek to absolute file offset. */
+bool
+filesys_seek(int8_t fd, size_t offset)
+{
+    file_t *file = _find_process_file(fd);
+    if (file == NULL) {
+        warn("seek: cannot find file for fd %d", fd);
+        return false;
+    }
+
+    inode_lock(file->inode);
+    size_t filesize = file->inode->d_inode.size;
+    inode_unlock(file->inode);
+
+    if (offset > filesize) {
+        warn("seek: offset %lu beyond filesize %lu", offset, filesize);
+        return false;
+    }
+
+    file->offset = offset;
+    return true;
+}
+
+
 /** Flush the in-memory modified bitmap block to disk. */
 bool
 inode_bitmap_update(uint32_t slot_no)

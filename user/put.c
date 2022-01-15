@@ -44,7 +44,6 @@ _open_writable_file(char *path, bool overwrite)
 
     /** If not overwriting, seek to current file end. */
     if (!overwrite) {
-        assert(stat.size >= 0);
         int ret = seek(fd, stat.size);
         if (ret != 0) {
             warn("put: cannot seek to offset %lu", stat.size);
@@ -72,10 +71,11 @@ _file_put_str(char *path, char *str, size_t len, bool overwrite, bool newline)
     }
 
     /** If putting newline after string. */
-    if (newline)
+    if (newline) {
         bytes_written = write(fd, "\n", 1);
-    if (bytes_written != 1)
-        warn("put: newline written %lu != 1", bytes_written);
+        if (bytes_written != 1)
+            warn("put: newline written %lu != 1", bytes_written);
+    }
 
     close(fd);
 }
