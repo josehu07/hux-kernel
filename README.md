@@ -33,7 +33,7 @@ $ make
 
 Or, if you just want to try out Hux without a development toolchain, download both the [released](https://github.com/josehu07/hux-kernel/releases) kernel image `hux.iso` and the initial file system image `vsfs.img` (256MB) to the folder.
 
-To run Hux in QEMU **>= v6.2.0**, do:
+To run Hux in QEMU **>= v6.2.0**, install QEMU & GRUB following [this wiki section](https://github.com/josehu07/hux-kernel/wiki/02.-The-Very-First-Skeleton#qemu-emulator--grub-bootloader), then do:
 
 ```bash
 $ make qemu     # opens a VGA GUI window
