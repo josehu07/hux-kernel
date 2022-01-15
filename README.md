@@ -10,7 +10,7 @@ Hux - An x86 32-bit single-CPU toy operating system kernel built from scratch, f
 |   Author    | Kernel Src LoC (temp)  | Tutorial LoC (temp) |
 |   :---:     |         :---:          |       :---:         |
 | Guanzhou Hu |      C + x86 ASM       |      Markdown       |
-|  Aug. 2021  |         7850           |        10005        |
+|  Jan. 2022  |         8160           |        10062        |
 
 
 ## Tutorial / Development Doc
@@ -31,7 +31,7 @@ $ make clean
 $ make
 ```
 
-Or, if you just want to try out Hux without a development toolchain, download both the [released](https://github.com/josehu07/hux-kernel/releases) kernel image `hux.iso` and the initial file system image `vsfs.img` (a little bit large) to the folder.
+Or, if you just want to try out Hux without a development toolchain, download both the [released](https://github.com/josehu07/hux-kernel/releases) kernel image `hux.iso` and the initial file system image `vsfs.img` (256MB) to the folder.
 
 To run Hux in QEMU **>= v6.2.0**, do:
 
