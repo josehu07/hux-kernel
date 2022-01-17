@@ -71,6 +71,24 @@ _change_cwd(char *path)
         warn("shell: cd to path '%s' failed", path);
 }
 
+/** Built-in cmd `shutdown`: poweroff machine. */
+static void
+_shutdown(void)
+{
+    char answer[LINE_BUF_SIZE];
+    printf("Shutting down, confirm? (y/n) ");
+    if (kbdstr(answer, LINE_BUF_SIZE) < 0)
+        error("shell: failed to get keyboard string");
+
+    if (strncmp(answer, "y", 1) != 0)
+        printf("Aborted.\n");
+    else {
+        printf("Confirmed.\n");
+        shutdown();
+        /** Not reached. */
+    }
+}
+
 /** Fork + exec external command executable. */
 static void
 _fork_exec(char *path, char **argv)
@@ -153,6 +171,8 @@ _handle_cmdline(char *line)
 
     if (strncmp(argv[0], "cd", 2) == 0)
         _change_cwd(argv[1]);   /** Could be NULL. */
+    else if (strncmp(argv[0], "shutdown", 8) == 0)
+        _shutdown();
     else
         _fork_exec(argv[0], argv);
 }

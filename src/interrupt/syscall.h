@@ -18,27 +18,28 @@
 #define INT_NO_SYSCALL 64   /** == 0x40 */
 
 /** List of known syscall numbers. */
-#define SYSCALL_GETPID  1
-#define SYSCALL_FORK    2
-#define SYSCALL_EXIT    3
-#define SYSCALL_SLEEP   4
-#define SYSCALL_WAIT    5
-#define SYSCALL_KILL    6
-#define SYSCALL_TPRINT  7
-#define SYSCALL_UPTIME  8
-#define SYSCALL_KBDSTR  9
-#define SYSCALL_SETHEAP 10
-#define SYSCALL_OPEN    11
-#define SYSCALL_CLOSE   12
-#define SYSCALL_CREATE  13
-#define SYSCALL_REMOVE  14
-#define SYSCALL_READ    15
-#define SYSCALL_WRITE   16
-#define SYSCALL_CHDIR   17
-#define SYSCALL_GETCWD  18
-#define SYSCALL_EXEC    19
-#define SYSCALL_FSTAT   20
-#define SYSCALL_SEEK    21
+#define SYSCALL_GETPID   1
+#define SYSCALL_FORK     2
+#define SYSCALL_EXIT     3
+#define SYSCALL_SLEEP    4
+#define SYSCALL_WAIT     5
+#define SYSCALL_KILL     6
+#define SYSCALL_TPRINT   7
+#define SYSCALL_UPTIME   8
+#define SYSCALL_KBDSTR   9
+#define SYSCALL_SETHEAP  10
+#define SYSCALL_OPEN     11
+#define SYSCALL_CLOSE    12
+#define SYSCALL_CREATE   13
+#define SYSCALL_REMOVE   14
+#define SYSCALL_READ     15
+#define SYSCALL_WRITE    16
+#define SYSCALL_CHDIR    17
+#define SYSCALL_GETCWD   18
+#define SYSCALL_EXEC     19
+#define SYSCALL_FSTAT    20
+#define SYSCALL_SEEK     21
+#define SYSCALL_SHUTDOWN 22
 
 
 /**

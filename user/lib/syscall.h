@@ -75,6 +75,7 @@ extern int32_t getcwd(char *buf, uint32_t limit);
 extern int32_t exec(char *path, char **argv);
 extern int32_t fstat(int32_t fd, file_stat_t *stat);
 extern int32_t seek(int32_t fd, uint32_t offset);
+extern void    shutdown();
 
 
 #endif

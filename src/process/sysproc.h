@@ -16,6 +16,7 @@ int32_t syscall_exit();
 int32_t syscall_sleep();
 int32_t syscall_wait();
 int32_t syscall_kill();
+int32_t syscall_shutdown();
 
 
 #endif

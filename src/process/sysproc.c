@@ -9,6 +9,7 @@
 
 #include "../common/printf.h"
 #include "../common/debug.h"
+#include "../common/port.h"
 
 #include "../device/timer.h"
 
@@ -85,4 +86,16 @@ syscall_kill(void)
         return SYS_FAIL_RC;
 
     return process_kill(pid);
+}
+
+/** void shutdown(void); */
+int32_t
+syscall_shutdown(void)
+{
+    /**
+     * QEMU-specific!
+     * Magic shutdown value of QEMU's default ACPI method.
+     */
+    outw(0x604, 0x2000);
+    return 0;   /** Not reached. */
 }

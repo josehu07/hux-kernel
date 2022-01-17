@@ -1,5 +1,5 @@
 /**
- * Common I/O ports inline assembly utilities (in At&T syntax).
+ * Common I/O ports inline assembly utilities (in AT&T syntax).
  */
 
 
